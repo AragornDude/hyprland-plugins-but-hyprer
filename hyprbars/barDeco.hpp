@@ -62,6 +62,7 @@ class CHyprBar : public IHyprWindowDecoration {
     bool                      m_bButtonHovered     = false;
     std::optional<CHyprColor> m_bForcedBarColor;
     std::optional<CHyprColor> m_bForcedTitleColor;
+    std::optional<int> m_bForcedBarHeight;
 
     PHLANIMVAR<CHyprColor>    m_cRealBarColor;
 
