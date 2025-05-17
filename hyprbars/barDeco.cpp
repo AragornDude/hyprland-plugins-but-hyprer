@@ -305,7 +305,7 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
         buttonSizes += b.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING);
     }
 
-    const auto       scaledSize        = m_bForcedBarTextSize.value_or(**PSIZE) * scale;
+    const auto scaledSize = (m_bForcedBarTextSize.value_or(**PSIZE)) * scale;
     const auto       scaledBorderSize  = BORDERSIZE * scale;
     const auto       scaledButtonsSize = buttonSizes * scale;
     const auto       scaledButtonsPad  = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) * scale;
@@ -589,9 +589,11 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         g_pHyprOpenGL->renderRect(titleBarBox, color, scaledRounding, m_pWindow->roundingPower());
 
     // render title
-    if (**PENABLETITLE && (m_szLastTitle != PWINDOW->m_title || m_bWindowSizeChanged || m_pTextTex->m_texID == 0 || m_bTitleColorChanged)) {
+    int currentTextSize = m_bForcedBarTextSize.value_or(**((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_text_size")->getDataStaticPtr()));
+    if (**PENABLETITLE && (m_szLastTitle != PWINDOW->m_title || m_bWindowSizeChanged || m_pTextTex->m_texID == 0 || m_bTitleColorChanged || m_iLastTextSize != currentTextSize)) {
         m_szLastTitle = PWINDOW->m_title;
         renderBarTitle(BARBUF, pMonitor->m_scale);
+        m_iLastTextSize = currentTextSize;
     }
 
     if (ROUNDING) {
