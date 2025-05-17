@@ -4,7 +4,7 @@
   hyprlandPlugins,
 }:
 hyprlandPlugins.mkHyprlandPlugin hyprland {
-  pluginName = "hyprbars";
+  pluginName = "hyprbars-og";
   version = "0.1";
   src = ./.;
 

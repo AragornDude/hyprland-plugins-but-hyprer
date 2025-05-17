@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.27)
 
-project(hyprbars
+project(hyprbars-og
     DESCRIPTION "hyprbars plugin for Hyprland"
     VERSION 0.1
 )
@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 23)
 
 file(GLOB_RECURSE SRC "*.cpp")
 
-add_library(hyprbars SHARED ${SRC})
+add_library(hyprbars-og SHARED ${SRC})
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(deps REQUIRED IMPORTED_TARGET
@@ -22,6 +22,6 @@ pkg_check_modules(deps REQUIRED IMPORTED_TARGET
     wayland-server
     xkbcommon
 )
-target_link_libraries(hyprbars PRIVATE rt PkgConfig::deps)
+target_link_libraries(hyprbars-og PRIVATE rt PkgConfig::deps)
 
-install(TARGETS hyprbars)
+install(TARGETS hyprbars-og)
