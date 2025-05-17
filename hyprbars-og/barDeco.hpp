@@ -106,6 +106,7 @@ class CHyprBar : public IHyprWindowDecoration {
 
     // for dynamic updates
     int    m_iLastHeight = 0;
+    int    m_iLastTextSize = -1;
 
     size_t getVisibleButtonCount(Hyprlang::INT* const* PBARBUTTONPADDING, Hyprlang::INT* const* PBARPADDING, const Vector2D& bufferSize, const float scale);
 
