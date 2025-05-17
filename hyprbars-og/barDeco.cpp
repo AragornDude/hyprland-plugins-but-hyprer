@@ -678,6 +678,7 @@ void CHyprBar::updateRules() {
 
     m_bForcedBarColor   = std::nullopt;
     m_bForcedTitleColor = std::nullopt;
+    m_bForcedBarTextSize = std::nullopt;
     m_hidden           = false;
 
     for (auto& r : rules) {
