@@ -67,13 +67,13 @@ class CHyprBar : public IHyprWindowDecoration {
     std::optional<int> m_bForcedBarPadding;
     std::optional<int> m_bForcedBarButtonPadding;
 
-    
+
     PHLANIMVAR<CHyprColor>    m_cRealBarColor;
 
     Vector2D                  cursorRelativeToBar();
 
     void                      renderPass(PHLMONITOR, float const& a);
-    void                      renderBarTitle(const Vector2D& bufferSize, const float scale);
+    void                      renderBarTitle(const Vector2D& bufferSize, Hyprlang::INT* const* PSIZE);
     void                      renderText(SP<CTexture> out, const std::string& text, const CHyprColor& color, const Vector2D& bufferSize, const float scale, const int fontSize);
     void                      renderBarButtons(const Vector2D& bufferSize, const float scale);
     void                      renderBarButtonsText(CBox* barBox, const float scale, const float a);
