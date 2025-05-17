@@ -61,7 +61,7 @@ SDecorationPositioningInfo CHyprBar::getPositioningInfo() {
     info.edges          = DECORATION_EDGE_TOP;
     info.priority       = **PPRECEDENCE ? 10005 : 5000;
     info.reserved       = true;
-    info.desiredExtents = {{0, m_hidden ? 0 : **PHEIGHT}, {0, 0}};
+    info.desiredExtents = {{0, m_hidden ? 0 : m_bForcedBarHeight.value_or(**PHEIGHT)}, {0, 0}};
     return info;
 }
 
@@ -147,7 +147,7 @@ void CHyprBar::handleDownEvent(SCallbackInfo& info, std::optional<ITouch::SDownE
 
     const bool         BUTTONSRIGHT = std::string{*PALIGNBUTTONS} != "left";
 
-    if (!VECINRECT(COORDS, 0, 0, assignedBoxGlobal().w, **PHEIGHT - 1)) {
+    if (!VECINRECT(COORDS, 0, 0, assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT) - 1)) {
 
         if (m_bDraggingThis) {
             if (m_bTouchEv) {
@@ -210,7 +210,7 @@ bool CHyprBar::doButtonPress(Hyprlang::INT* const* PBARPADDING, Hyprlang::INT* c
     float offset = **PBARPADDING;
 
     for (auto& b : g_pGlobalState->buttons) {
-        const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, **PHEIGHT};
+        const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
         Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - **PBARBUTTONPADDING - b.size - offset : offset), (BARBUF.y - b.size) / 2.0}.floor();
 
         if (VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + b.size + **PBARBUTTONPADDING, currentPos.y + b.size)) {
@@ -462,7 +462,7 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
         const auto scaledButtonsPad = **PBARBUTTONPADDING * scale;
 
         // check if hovering here
-        const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, **PHEIGHT};
+        const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
         Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - **PBARBUTTONPADDING - button.size - noScaleOffset : noScaleOffset), (BARBUF.y - button.size) / 2.0}.floor();
         bool       hovering   = VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + button.size + **PBARBUTTONPADDING, currentPos.y + button.size);
         noScaleOffset += **PBARBUTTONPADDING + button.size;
@@ -528,8 +528,8 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     const bool BUTTONSRIGHT = std::string{*PALIGNBUTTONS} != "left";
     const bool SHOULDBLUR   = **PENABLEBLUR && **PENABLEBLURGLOBAL && color.a < 1.F;
 
-    if (**PHEIGHT < 1) {
-        m_iLastHeight = **PHEIGHT;
+    if (m_bForcedBarHeight.value_or(**PHEIGHT) < 1) {
+        m_iLastHeight = m_bForcedBarHeight.value_or(**PHEIGHT);
         return;
     }
 
@@ -540,7 +540,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
 
     const auto scaledRounding = ROUNDING > 0 ? ROUNDING * pMonitor->m_scale - 2 /* idk why but otherwise it looks bad due to the gaps */ : 0;
 
-    m_seExtents = {{0, **PHEIGHT}, {}};
+    m_seExtents = {{0, m_bForcedBarHeight.value_or(**PHEIGHT)}, {}};
 
     const auto DECOBOX = assignedBoxGlobal();
 
@@ -622,9 +622,9 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     m_bTitleColorChanged = false;
 
     // dynamic updates change the extents
-    if (m_iLastHeight != **PHEIGHT) {
+    if (m_iLastHeight != m_bForcedBarHeight.value_or(**PHEIGHT)) {
         g_pLayoutManager->getCurrentLayout()->recalculateWindow(PWINDOW);
-        m_iLastHeight = **PHEIGHT;
+        m_iLastHeight = m_bForcedBarHeight.value_or(**PHEIGHT);
     }
 }
 
@@ -678,6 +678,7 @@ void CHyprBar::updateRules() {
 
     m_bForcedBarColor   = std::nullopt;
     m_bForcedTitleColor = std::nullopt;
+    m_bForcedBarHeight  = std::nullopt;
     m_hidden           = false;
 
     for (auto& r : rules) {
@@ -699,6 +700,8 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))
         m_bForcedTitleColor = CHyprColor(configStringToInt(arg).value_or(0));
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_height"))
+        m_bForcedBarHeight = configStringToInt(arg).value_or(0);
 }
 
 void CHyprBar::damageOnButtonHover() {
@@ -713,7 +716,7 @@ void CHyprBar::damageOnButtonHover() {
     const auto         COORDS = cursorRelativeToBar();
 
     for (auto& b : g_pGlobalState->buttons) {
-        const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, **PHEIGHT};
+        const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
         Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - **PBARBUTTONPADDING - b.size - offset : offset), (BARBUF.y - b.size) / 2.0}.floor();
 
         bool       hover = VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + b.size + **PBARBUTTONPADDING, currentPos.y + b.size);
