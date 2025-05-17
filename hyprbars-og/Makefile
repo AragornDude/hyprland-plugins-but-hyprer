@@ -3,7 +3,7 @@ INCLUDES = `pkg-config --cflags pixman-1 libdrm hyprland pangocairo libinput lib
 LIBS = `pkg-config --libs pangocairo`
 
 SRC = main.cpp barDeco.cpp BarPassElement.cpp
-TARGET = hyprbars.so
+TARGET = hyprbars-og.so
 
 all: $(TARGET)
 

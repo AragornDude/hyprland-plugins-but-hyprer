@@ -37,7 +37,7 @@ version = "1.0"
 authors = ["Vaxry"]
 
 [hyprbars-og.build]
-output = "hyprbars-og/hyprbars.so"
+output = "hyprbars-og/hyprbars-og.so"
 steps = [
     "make -C hyprbars-og all",
 ]
