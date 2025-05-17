@@ -305,7 +305,7 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
         buttonSizes += b.size + **PBARBUTTONPADDING;
     }
 
-    const auto       scaledSize        = **PSIZE * scale;
+    const auto scaledSize = (m_bForcedBarTextSize.value_or(**PSIZE)) * scale;
     const auto       scaledBorderSize  = BORDERSIZE * scale;
     const auto       scaledButtonsSize = buttonSizes * scale;
     const auto       scaledButtonsPad  = **PBARBUTTONPADDING * scale;
@@ -699,6 +699,8 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))
         m_bForcedTitleColor = CHyprColor(configStringToInt(arg).value_or(0));
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_size"))
+        m_bForcedBarTextSize = configStringToInt(arg).value_or(0);
 }
 
 void CHyprBar::damageOnButtonHover() {
