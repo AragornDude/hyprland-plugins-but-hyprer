@@ -57,13 +57,13 @@ build = [
     "make -C hyprbars all",
 ]
 
-[hyprbars-og]
-description = "A plugin to add title bars to windows"
-authors = ["Vaxry"]
-output = "hyprbars-og/hyprbars-og.so"
-build = [
-    "make -C hyprbars-og all",
-]
+#[hyprbars-og]
+#description = "A plugin to add title bars to windows"
+#authors = ["Vaxry"]
+#output = "hyprbars-og/hyprbars-og.so"
+#build = [
+#    "make -C hyprbars-og all",
+#]
 
 #[hyprtrails]
 #description = "A plugin to add trails behind moving windows"
