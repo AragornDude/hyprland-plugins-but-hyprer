@@ -20,7 +20,7 @@ CHyprBar::CHyprBar(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow) {
     static auto* const PCOLOR = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_color")->getDataStaticPtr();
 
     const auto         PMONITOR = pWindow->m_monitor.lock();
-    PMONITOR->m_scheduledRecalc   = true;
+    PMONITOR->m_scheduledRecalc = true;
 
     //button events
     m_pMouseButtonCallback = HyprlandAPI::registerCallbackDynamic(
@@ -54,6 +54,7 @@ CHyprBar::~CHyprBar() {
 
 SDecorationPositioningInfo CHyprBar::getPositioningInfo() {
     static auto* const         PHEIGHT     = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_height")->getDataStaticPtr();
+    static auto* const         PENABLED    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:enabled")->getDataStaticPtr();
     static auto* const         PPRECEDENCE = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_precedence_over_border")->getDataStaticPtr();
 
     SDecorationPositioningInfo info;
@@ -77,6 +78,11 @@ std::string CHyprBar::getDisplayName() {
 }
 
 bool CHyprBar::inputIsValid() {
+    static auto* const PENABLED = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:enabled")->getDataStaticPtr();
+
+    if (!**PENABLED)
+        return false;
+
     if (!m_pWindow->m_workspace || !m_pWindow->m_workspace->isVisible() || !g_pInputManager->m_exclusiveLSes.empty() ||
         (g_pSeatManager->m_seatGrab && !g_pSeatManager->m_seatGrab->accepts(m_pWindow->m_wlSurface->resource())))
         return false;
@@ -495,7 +501,14 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
 }
 
 void CHyprBar::draw(PHLMONITOR pMonitor, const float& a) {
-    if (m_hidden || !validMapped(m_pWindow))
+    static auto* const PENABLED = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:enabled")->getDataStaticPtr();
+
+    if (m_bLastEnabledState != **PENABLED) {
+        m_bLastEnabledState = **PENABLED;
+        g_pDecorationPositioner->repositionDeco(this);
+    }
+
+    if (m_hidden || !validMapped(m_pWindow) || !**PENABLED)
         return;
 
     const auto PWINDOW = m_pWindow.lock();
