@@ -528,7 +528,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     static auto* const PPRECEDENCE       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_precedence_over_border")->getDataStaticPtr();
     static auto* const PALIGNBUTTONS     = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_buttons_alignment")->getDataStaticPtr();
     static auto* const PENABLETITLE      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_title_enabled")->getDataStaticPtr();
-    static auto* const PENABLEBLUR       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_blur")->getDataStaticPtr();
+    static auto* const PENABLEBLUR       = m_bForcedBarBlur.value_or((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_blur"))->getDataStaticPtr();
     static auto* const PENABLEBLURGLOBAL = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "decoration:blur:enabled")->getDataStaticPtr();
 
     const CHyprColor   DEST_COLOR = m_bForcedBarColor.value_or(**PCOLOR);
@@ -714,6 +714,20 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
 
     if (r->m_rule == "plugin:hyprbars:nobar")
         m_hidden = true;
+
+
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_blur"))
+        m_bForcedBarBlur = true;
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_title_enabled"))
+        m_bForcedBarTitleEnabled = true;
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_part_of_window"))
+        m_bForcedBarPartOfWindow = true;
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_precedence_over_border"))
+        m_bForcedBarPrecedence = true;
+    else if (r->m_rule.starts_with("plugin:hyprbars:icon_on_hover"))
+        m_bForcedIconOnHover = true;
+
+
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))
