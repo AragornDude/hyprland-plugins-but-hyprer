@@ -528,7 +528,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     static auto* const PPRECEDENCE       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_precedence_over_border")->getDataStaticPtr();
     static auto* const PALIGNBUTTONS     = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_buttons_alignment")->getDataStaticPtr();
     static auto* const PENABLETITLE      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_title_enabled")->getDataStaticPtr();
-    static auto* const PENABLEBLUR       = m_bForcedBarBlur.value_or((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_blur"))->getDataStaticPtr();
+    static auto* const PENABLEBLUR       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_blur")->getDataStaticPtr();
     static auto* const PENABLEBLURGLOBAL = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "decoration:blur:enabled")->getDataStaticPtr();
 
     const CHyprColor   DEST_COLOR = m_bForcedBarColor.value_or(**PCOLOR);
@@ -539,7 +539,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
 
     color.a *= a;
     const bool BUTTONSRIGHT = std::string{*PALIGNBUTTONS} != "left";
-    const bool SHOULDBLUR   = **PENABLEBLUR && **PENABLEBLURGLOBAL && color.a < 1.F;
+    const bool SHOULDBLUR   = m_bForcedBarBlur.value_or(**PENABLEBLUR) && **PENABLEBLURGLOBAL && color.a < 1.F;
 
     if (m_bForcedBarHeight.value_or(**PHEIGHT) < 1) {
         m_iLastHeight = m_bForcedBarHeight.value_or(**PHEIGHT);
