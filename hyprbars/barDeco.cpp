@@ -297,6 +297,7 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
     static auto* const PCOLOR            = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:col.text")->getDataStaticPtr();
     static auto* const PSIZE             = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_text_size")->getDataStaticPtr();
     static auto* const PFONT             = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_text_font")->getDataStaticPtr();
+    const bool localTextFont = m_bForcedBarTextFont.has_value() ? (m_bForcedBarTextFont.value() != 0) : (**PFONT != 0);
     static auto* const PALIGN            = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_text_align")->getDataStaticPtr();
     static auto* const PALIGNBUTTONS     = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_buttons_alignment")->getDataStaticPtr();
     static auto* const PBARPADDING       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_padding")->getDataStaticPtr();
@@ -334,7 +335,7 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
     PangoLayout* layout = pango_cairo_create_layout(CAIRO);
     pango_layout_set_text(layout, m_szLastTitle.c_str(), -1);
 
-    PangoFontDescription* fontDesc = pango_font_description_from_string(*PFONT);
+    PangoFontDescription* fontDesc = pango_font_description_from_string(localTextFont);
     pango_font_description_set_size(fontDesc, scaledSize * PANGO_SCALE);
     pango_layout_set_font_description(layout, fontDesc);
     pango_font_description_free(fontDesc);
@@ -708,6 +709,7 @@ void CHyprBar::updateRules() {
     m_bForcedBarPartOfWindow = std::nullopt;
     m_bForcedBarPrecedenceOverBorder = std::nullopt;
     m_bForcedIconOnHover = std::nullopt;
+    m_bForcedBarTextFont = std::nullopt;
     m_hidden           = false;
 
     for (auto& r : rules) {
@@ -737,6 +739,9 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
     else if (r->m_rule.starts_with("plugin:hyprbars:icon_on_hover"))
         m_bForcedIconOnHover = configStringToInt(arg).value_or(0);
 
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_font"))
+        m_bforcedBarTextFont = arg.value_or("Sans");
+    
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))
