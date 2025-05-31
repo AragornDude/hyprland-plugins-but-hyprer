@@ -530,7 +530,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     static auto* const PENABLETITLE      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_title_enabled")->getDataStaticPtr();
     static auto* const PENABLEBLUR       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_blur")->getDataStaticPtr();
     static auto* const PENABLEBLURGLOBAL = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "decoration:blur:enabled")->getDataStaticPtr();
-
+    const bool localBlur = m_bForcedBarBlur.has_value() ? (m_bForcedBarBlur.value() != 0) : (**PENABLEBLUR != 0);
     const CHyprColor   DEST_COLOR = m_bForcedBarColor.value_or(**PCOLOR);
     if (DEST_COLOR != m_cRealBarColor->goal())
         *m_cRealBarColor = DEST_COLOR;
@@ -539,7 +539,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
 
     color.a *= a;
     const bool BUTTONSRIGHT = std::string{*PALIGNBUTTONS} != "left";
-    const bool SHOULDBLUR   = **PENABLEBLUR && **PENABLEBLURGLOBAL && color.a < 1.F;
+    const bool SHOULDBLUR   = localBlur && **PENABLEBLURGLOBAL && color.a < 1.F;
 
     if (m_bForcedBarHeight.value_or(**PHEIGHT) < 1) {
         m_iLastHeight = m_bForcedBarHeight.value_or(**PHEIGHT);
@@ -697,6 +697,7 @@ void CHyprBar::updateRules() {
     m_bForcedBarTextSize = std::nullopt;
     m_bForcedBarPadding = std::nullopt;
     m_bForcedBarButtonPadding = std::nullopt;
+    m_bForcedBarBlur = std::nullopt;
     m_hidden           = false;
 
     for (auto& r : rules) {
@@ -714,6 +715,10 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
 
     if (r->m_rule == "plugin:hyprbars:nobar")
         m_hidden = true;
+
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_blur"))
+        m_bForcedBarBlur = configStringToInt(arg).value_or(0);
+
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))

@@ -67,6 +67,7 @@ class CHyprBar : public IHyprWindowDecoration {
     std::optional<int> m_bForcedBarTextSize;
     std::optional<int> m_bForcedBarPadding;
     std::optional<int> m_bForcedBarButtonPadding;
+    std::optional<int> m_bForcedBarBlur;
 
 
     PHLANIMVAR<CHyprColor>    m_cRealBarColor;
