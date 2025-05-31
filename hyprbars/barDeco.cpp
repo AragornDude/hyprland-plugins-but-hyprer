@@ -334,13 +334,17 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
     PangoLayout* layout = pango_cairo_create_layout(CAIRO);
     pango_layout_set_text(layout, m_szLastTitle.c_str(), -1);
 
-    PangoFontDescription* fontDesc = pango_font_description_from_string(*PFONT);
+    const std::string& fontName = m_bForcedBarTextFont.value_or(*PFONT);
+    PangoFontDescription* fontDesc = pango_font_description_from_string(fontName.c_str());
     pango_font_description_set_size(fontDesc, scaledSize * PANGO_SCALE);
     pango_layout_set_font_description(layout, fontDesc);
     pango_font_description_free(fontDesc);
 
     PangoContext* context = pango_layout_get_context(layout);
     pango_context_set_base_dir(context, PANGO_DIRECTION_NEUTRAL);
+
+    // --- Use forced alignment if present ---
+    const std::string& align = m_bForcedBarTextAlign.value_or(*PALIGN);
 
     const int paddingTotal = scaledBarPadding * 2 + scaledButtonsSize + (std::string{*PALIGN} != "left" ? scaledButtonsSize : 0);
     const int maxWidth     = std::clamp(static_cast<int>(bufferSize.x - paddingTotal), 0, INT_MAX);
@@ -352,8 +356,17 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
 
     int layoutWidth, layoutHeight;
     pango_layout_get_size(layout, &layoutWidth, &layoutHeight);
-    const int xOffset = std::string{*PALIGN} == "left" ? std::round(scaledBarPadding + (BUTTONSRIGHT ? 0 : scaledButtonsSize)) :
-                                                         std::round(((bufferSize.x - scaledBorderSize) / 2.0 - layoutWidth / PANGO_SCALE / 2.0));
+    int xOffset = 0;
+    if (align == "left") {
+        xOffset = std::round(scaledBarPadding + (BUTTONSRIGHT ? 0 : scaledButtonsSize));
+    } else if (align == "center") {
+        xOffset = std::round(((bufferSize.x - scaledBorderSize) / 2.0 - layoutWidth / PANGO_SCALE / 2.0));
+    } else if (align == "right") {
+        xOffset = std::round(bufferSize.x - scaledBarPadding - layoutWidth / PANGO_SCALE - (BUTTONSRIGHT ? scaledButtonsSize : 0));
+    } else {
+        // fallback to center
+        xOffset = std::round(((bufferSize.x - scaledBorderSize) / 2.0 - layoutWidth / PANGO_SCALE / 2.0));
+    }
     const int yOffset = std::round((bufferSize.y / 2.0 - layoutHeight / PANGO_SCALE / 2.0));
 
     cairo_move_to(CAIRO, xOffset, yOffset);
@@ -708,6 +721,9 @@ void CHyprBar::updateRules() {
     m_bForcedBarPartOfWindow = std::nullopt;
     m_bForcedBarPrecedenceOverBorder = std::nullopt;
     m_bForcedIconOnHover = std::nullopt;
+    m_bForcedBarTextFont = std::nullopt;
+    m_bForcedBarTextAlign = std::nullopt;
+    m_bForcedBarButtonsAlignment = std::nullopt;
     m_hidden           = false;
 
     for (auto& r : rules) {
@@ -736,6 +752,14 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
         m_bForcedBarPrecedenceOverBorder = configStringToInt(arg).value_or(0);
     else if (r->m_rule.starts_with("plugin:hyprbars:icon_on_hover"))
         m_bForcedIconOnHover = configStringToInt(arg).value_or(0);
+
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_font"))
+        m_bForcedBarTextFont = arg;
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_align"))
+        m_bForcedBarTextAlign = arg;
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_buttons_alignment"))
+        m_bForcedBarButtonsAlignment = arg;
+    
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))
