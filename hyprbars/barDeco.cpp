@@ -718,16 +718,7 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
 
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_blur"))
         m_bForcedBarBlur = true;
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_title_enabled"))
-        m_bForcedBarTitleEnabled = true;
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_part_of_window"))
-        m_bForcedBarPartOfWindow = true;
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_precedence_over_border"))
-        m_bForcedBarPrecedence = true;
-    else if (r->m_rule.starts_with("plugin:hyprbars:icon_on_hover"))
-        m_bForcedIconOnHover = true;
-
-
+        
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))
