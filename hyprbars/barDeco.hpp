@@ -58,7 +58,6 @@ class CHyprBar : public IHyprWindowDecoration {
 
     bool                      m_bWindowSizeChanged = false;
     bool                      m_hidden             = false;
-    bool                      m_ForcedBarBlur      = false;
     bool                      m_bTitleColorChanged = false;
     bool                      m_bButtonHovered     = false;
     bool                      m_bLastEnabledState  = false;

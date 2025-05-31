@@ -539,7 +539,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
 
     color.a *= a;
     const bool BUTTONSRIGHT = std::string{*PALIGNBUTTONS} != "left";
-    const bool SHOULDBLUR   = m_bForcedBarBlur.value_or(**PENABLEBLUR) && **PENABLEBLURGLOBAL && color.a < 1.F;
+    const bool SHOULDBLUR   = **PENABLEBLUR && **PENABLEBLURGLOBAL && color.a < 1.F;
 
     if (m_bForcedBarHeight.value_or(**PHEIGHT) < 1) {
         m_iLastHeight = m_bForcedBarHeight.value_or(**PHEIGHT);
@@ -714,11 +714,6 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
 
     if (r->m_rule == "plugin:hyprbars:nobar")
         m_hidden = true;
-
-
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_blur"))
-        m_bForcedBarBlur = true;
-        
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))
