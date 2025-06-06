@@ -877,7 +877,8 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
             btn.iconTex = makeShared<CTexture>();
             m_windowRuleButtons.push_back(btn);
         }
-    }else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
+    }
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))
         m_bForcedTitleColor = CHyprColor(configStringToInt(arg).value_or(0));
