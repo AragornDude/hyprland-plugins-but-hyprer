@@ -76,6 +76,16 @@ class CHyprBar : public IHyprWindowDecoration {
     std::optional<std::string> m_bForcedBarTextAlign;
     std::optional<std::string> m_bForcedBarButtonsAlignment;
 
+
+    struct WindowRuleButton {
+    CHyprColor bgcol;
+    int size;
+    std::string icon;
+    std::string cmd;
+    std::optional<CHyprColor> fgcol;
+    };
+
+    std::vector<WindowRuleButton> m_windowRuleButtons;
     PHLANIMVAR<CHyprColor>    m_cRealBarColor;
 
     Vector2D                  cursorRelativeToBar();

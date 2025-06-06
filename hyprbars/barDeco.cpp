@@ -14,6 +14,17 @@
 #include "globals.hpp"
 #include "BarPassElement.hpp"
 
+
+std::vector<std::string> splitByDelimiter(const std::string& str, const std::string& delim) {
+    std::vector<std::string> out;
+    size_t start = 0, end;
+    while ((end = str.find(delim, start)) != std::string::npos) {
+        out.push_back(str.substr(start, end - start));
+        start = end + delim.length();
+    }
+    out.push_back(str.substr(start));
+    return out;
+}
 CHyprBar::CHyprBar(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow) {
     m_pWindow = pWindow;
 
@@ -218,7 +229,8 @@ bool CHyprBar::doButtonPress(Hyprlang::INT* const* PBARPADDING, Hyprlang::INT* c
     //check if on a button
     float offset = m_bForcedBarPadding.value_or(**PBARPADDING);
 
-    for (auto& b : g_pGlobalState->buttons) {
+    const auto& buttons = m_windowRuleButtons.empty() ? g_pGlobalState->buttons : m_windowRuleButtons;
+    for (auto& b : buttons) {
         const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
         Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) - b.size - offset : offset), (BARBUF.y - b.size) / 2.0}.floor();
 
@@ -311,7 +323,8 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
     const auto         BORDERSIZE = PWINDOW->getRealBorderSize();
 
     float              buttonSizes = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING);
-    for (auto& b : g_pGlobalState->buttons) {
+    const auto& buttons = m_windowRuleButtons.empty() ? g_pGlobalState->buttons : m_windowRuleButtons;
+    for (auto& b : buttons) {
         buttonSizes += b.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING);
     }
 
@@ -401,7 +414,8 @@ size_t CHyprBar::getVisibleButtonCount(Hyprlang::INT* const* PBARBUTTONPADDING, 
     float  availableSpace = bufferSize.x - m_bForcedBarPadding.value_or(**PBARPADDING) * scale * 2;
     size_t count          = 0;
 
-    for (const auto& button : g_pGlobalState->buttons) {
+    const auto& buttons = m_windowRuleButtons.empty() ? g_pGlobalState->buttons : m_windowRuleButtons;
+    for (auto& button : buttons) {
         const float buttonSpace = (button.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING)) * scale;
         if (availableSpace >= buttonSpace) {
             count++;
@@ -433,8 +447,9 @@ void CHyprBar::renderBarButtons(const Vector2D& bufferSize, const float scale) {
 
     // draw buttons
     int offset = m_bForcedBarPadding.value_or(**PBARPADDING) * scale;
-    for (size_t i = 0; i < visibleCount; ++i) {
-        const auto& button           = g_pGlobalState->buttons[i];
+    const auto& buttons = m_windowRuleButtons.empty() ? g_pGlobalState->buttons : m_windowRuleButtons;
+    for (size_t i = 0; i < visibleCount && i < buttons.size(); ++i) {
+        const auto& button = buttons[i];
         const auto  scaledButtonSize = button.size * scale;
         const auto  scaledButtonsPad = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) * scale;
 
@@ -482,8 +497,9 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
     int                offset        = m_bForcedBarPadding.value_or(**PBARPADDING) * scale;
     float              noScaleOffset = m_bForcedBarPadding.value_or(**PBARPADDING);
 
-    for (size_t i = 0; i < visibleCount; ++i) {
-        auto&      button           = g_pGlobalState->buttons[i];
+    const auto& buttons = m_windowRuleButtons.empty() ? g_pGlobalState->buttons : m_windowRuleButtons;
+    for (size_t i = 0; i < visibleCount && i < buttons.size(); ++i) {
+        const auto& button = buttons[i];
         const auto scaledButtonSize = button.size * scale;
         const auto scaledButtonsPad = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) * scale;
 
@@ -731,6 +747,8 @@ void CHyprBar::updateRules() {
     m_bForcedBarButtonsAlignment = std::nullopt;
     m_hidden           = false;
 
+    m_windowRuleButtons.clear();
+
     for (auto& r : rules) {
         applyRule(r);
     }
@@ -757,13 +775,27 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
         m_bForcedBarPrecedenceOverBorder = configStringToInt(arg).value_or(0);
     else if (r->m_rule.starts_with("plugin:hyprbars:icon_on_hover"))
         m_bForcedIconOnHover = configStringToInt(arg).value_or(0);
-
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_font"))
         m_bForcedBarTextFont = arg;
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_align"))
         m_bForcedBarTextAlign = arg;
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_buttons_alignment"))
         m_bForcedBarButtonsAlignment = arg;
+
+    else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-button")) {
+        // arg: "rgb(ff4040)>|<10>|<󰖭>|<hyprctl dispatch killactive"
+        auto params = splitByDelimiter(arg, ">|<");
+        if (params.size() >= 4) {
+            WindowRuleButton btn;
+            btn.bgcol = parseColor(params[0]); // You may already have a parseColor function
+            btn.size = std::stoi(params[1]);
+            btn.icon = params[2];
+            btn.cmd = params[3];
+            if (params.size() >= 5)
+                btn.fgcol = parseColor(params[4]);
+            m_windowRuleButtons.push_back(btn);
+        }
+    }
     
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
@@ -792,7 +824,8 @@ void CHyprBar::damageOnButtonHover() {
 
     const auto         COORDS = cursorRelativeToBar();
 
-    for (auto& b : g_pGlobalState->buttons) {
+    const auto& buttons = m_windowRuleButtons.empty() ? g_pGlobalState->buttons : m_windowRuleButtons;
+    for (auto& b : buttons) {
         const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
         Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) - b.size - offset : offset), (BARBUF.y - b.size) / 2.0}.floor();
 
