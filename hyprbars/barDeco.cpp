@@ -787,12 +787,12 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
         auto params = splitByDelimiter(arg, ">|<");
         if (params.size() >= 4) {
             WindowRuleButton btn;
-            btn.bgcol = parseColor(params[0]); // You may already have a parseColor function
+            btn.bgcol = params[0]; // You may already have a parseColor function
             btn.size = std::stoi(params[1]);
             btn.icon = params[2];
             btn.cmd = params[3];
             if (params.size() >= 5)
-                btn.fgcol = parseColor(params[4]);
+                btn.fgcol = params[4];
             m_windowRuleButtons.push_back(btn);
         }
     }
