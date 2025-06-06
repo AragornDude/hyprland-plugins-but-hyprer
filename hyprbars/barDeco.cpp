@@ -783,19 +783,18 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
         m_bForcedBarButtonsAlignment = arg;
 
     else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-button")) {
-        // arg: "rgb(ff4040)>|<10>|<󰖭>|<hyprctl dispatch killactive"
         auto params = splitByDelimiter(arg, ">|<");
         if (params.size() >= 4) {
             WindowRuleButton btn;
-            btn.bgcol = params[0]; // You may already have a parseColor function
+            btn.bgcol = params[0];
             btn.size = std::stoi(params[1]);
             btn.icon = params[2];
             btn.cmd = params[3];
             if (params.size() >= 5)
                 btn.fgcol = params[4];
+            btn.iconTex = makeShared<CTexture>();
             m_windowRuleButtons.push_back(btn);
         }
-    }
     
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
