@@ -555,7 +555,7 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
             if (button.iconTex->m_texID == 0 /* icon is not rendered */ && !button.icon.empty()) {
                 // render icon
                 const Vector2D BUFSIZE = {scaledButtonSize, scaledButtonSize};
-                auto           fgcol   = button.userfg ? button.fgcol : (button.bgcol.r + button.bgcol.g + button.bgcol.b < 1) ? CHyprColor(0xFFFFFFFF) : CHyprColor(0xFF000000);
+                CHyprColor fgcol = (button.userfg && button.fgcol.has_value()) ? button.fgcol.value() : ((button.bgcol.r + button.bgcol.g + button.bgcol.b < 1) ? CHyprColor(0xFFFFFFFF) : CHyprColor(0xFF000000));
 
                 renderText(button.iconTex, button.icon, fgcol, BUFSIZE, scale, button.size * 0.62);
             }
@@ -863,7 +863,7 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_buttons_alignment"))
         m_bForcedBarButtonsAlignment = arg;
 
-    else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-button"))
+    else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-button")){}
         auto params = splitByDelimiter(arg, ">|<");
         if (params.size() >= 4) {
             WindowRuleButton btn;
@@ -877,8 +877,7 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
             btn.iconTex = makeShared<CTexture>();
             m_windowRuleButtons.push_back(btn);
         }
-     
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
+    }else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))
         m_bForcedTitleColor = CHyprColor(configStringToInt(arg).value_or(0));
