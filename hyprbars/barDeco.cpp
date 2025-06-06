@@ -863,7 +863,7 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_buttons_alignment"))
         m_bForcedBarButtonsAlignment = arg;
 
-    else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-button")) {
+    else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-button"))
         auto params = splitByDelimiter(arg, ">|<");
         if (params.size() >= 4) {
             WindowRuleButton btn;
@@ -873,6 +873,7 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
             btn.cmd = params[3];
             if (params.size() >= 5)
                 btn.fgcol = CHyprColor(configStringToInt(params[4]).value_or(0));
+                btn.userfg = true;
             btn.iconTex = makeShared<CTexture>();
             m_windowRuleButtons.push_back(btn);
         }

@@ -84,6 +84,7 @@ class CHyprBar : public IHyprWindowDecoration {
       std::string cmd;
       std::optional<CHyprColor> fgcol;
       SP<CTexture> iconTex = makeShared<CTexture>();
+      bool userfg = false;
     };
 
     std::vector<WindowRuleButton> m_windowRuleButtons;
