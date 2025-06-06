@@ -229,18 +229,32 @@ bool CHyprBar::doButtonPress(Hyprlang::INT* const* PBARPADDING, Hyprlang::INT* c
     //check if on a button
     float offset = m_bForcedBarPadding.value_or(**PBARPADDING);
 
-    const auto& buttons = m_windowRuleButtons.empty() ? g_pGlobalState->buttons : m_windowRuleButtons;
-    for (auto& b : buttons) {
-        const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
-        Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) - b.size - offset : offset), (BARBUF.y - b.size) / 2.0}.floor();
+    if (!m_windowRuleButtons.empty()) {
+        for (auto& b : m_windowRuleButtons) {
+            const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
+            Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) - b.size - offset : offset), (BARBUF.y - b.size) / 2.0}.floor();
 
-        if (VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + b.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING), currentPos.y + b.size)) {
-            // hit on close
-            g_pKeybindManager->m_dispatchers["exec"](b.cmd);
-            return true;
+            if (VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + b.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING), currentPos.y + b.size)) {
+                // hit on close
+                g_pKeybindManager->m_dispatchers["exec"](b.cmd);
+                return true;
+            }
+
+            offset += m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) + b.size;
         }
+    } else {
+        for (auto& b : g_pGlobalState->buttons) {
+            const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
+            Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) - b.size - offset : offset), (BARBUF.y - b.size) / 2.0}.floor();
 
-        offset += m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) + b.size;
+            if (VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + b.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING), currentPos.y + b.size)) {
+                // hit on close
+                g_pKeybindManager->m_dispatchers["exec"](b.cmd);
+                return true;
+            }
+
+            offset += m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) + b.size;
+        }
     }
     return false;
 }
@@ -323,11 +337,15 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
     const auto         BORDERSIZE = PWINDOW->getRealBorderSize();
 
     float              buttonSizes = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING);
-    const auto& buttons = m_windowRuleButtons.empty() ? g_pGlobalState->buttons : m_windowRuleButtons;
-    for (auto& b : buttons) {
-        buttonSizes += b.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING);
+    if (!m_windowRuleButtons.empty()) {
+        for (auto& b : m_windowRuleButtons) {
+            buttonSizes += b.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING);
+        }
+    } else {
+        for (const auto& b : g_pGlobalState->buttons) {
+            buttonSizes += b.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING);
+        }
     }
-
     const auto scaledSize = (m_bForcedBarTextSize.value_or(**PSIZE)) * scale;
     const auto       scaledBorderSize  = BORDERSIZE * scale;
     const auto       scaledButtonsSize = buttonSizes * scale;
@@ -414,14 +432,24 @@ size_t CHyprBar::getVisibleButtonCount(Hyprlang::INT* const* PBARBUTTONPADDING, 
     float  availableSpace = bufferSize.x - m_bForcedBarPadding.value_or(**PBARPADDING) * scale * 2;
     size_t count          = 0;
 
-    const auto& buttons = m_windowRuleButtons.empty() ? g_pGlobalState->buttons : m_windowRuleButtons;
-    for (auto& button : buttons) {
-        const float buttonSpace = (button.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING)) * scale;
-        if (availableSpace >= buttonSpace) {
-            count++;
-            availableSpace -= buttonSpace;
-        } else
-            break;
+    if (!m_windowRuleButtons.empty()) {
+        for (auto& button : m_windowRuleButtons) {
+            const float buttonSpace = (button.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING)) * scale;
+            if (availableSpace >= buttonSpace) {
+                count++;
+                availableSpace -= buttonSpace;
+            } else
+                break;
+        }
+    } else {
+        for (const auto& button : g_pGlobalState->buttons) {
+            const float buttonSpace = (button.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING)) * scale;
+            if (availableSpace >= buttonSpace) {
+                count++;
+                availableSpace -= buttonSpace;
+            } else
+                break;
+        }
     }
 
     return count;
@@ -447,19 +475,34 @@ void CHyprBar::renderBarButtons(const Vector2D& bufferSize, const float scale) {
 
     // draw buttons
     int offset = m_bForcedBarPadding.value_or(**PBARPADDING) * scale;
-    const auto& buttons = m_windowRuleButtons.empty() ? g_pGlobalState->buttons : m_windowRuleButtons;
-    for (size_t i = 0; i < visibleCount && i < buttons.size(); ++i) {
-        const auto& button = buttons[i];
-        const auto  scaledButtonSize = button.size * scale;
-        const auto  scaledButtonsPad = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) * scale;
+    if (!m_windowRuleButtons.empty()) {
+        for (size_t i = 0; i < visibleCount && i < m_windowRuleButtons.size(); ++i) {
+            const auto& button = m_windowRuleButtons[i];
+            const auto  scaledButtonSize = button.size * scale;
+            const auto  scaledButtonsPad = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) * scale;
 
-        const auto  pos = Vector2D{BUTTONSRIGHT ? bufferSize.x - offset - scaledButtonSize / 2.0 : offset + scaledButtonSize / 2.0, bufferSize.y / 2.0}.floor();
+            const auto  pos = Vector2D{BUTTONSRIGHT ? bufferSize.x - offset - scaledButtonSize / 2.0 : offset + scaledButtonSize / 2.0, bufferSize.y / 2.0}.floor();
 
-        cairo_set_source_rgba(CAIRO, button.bgcol.r, button.bgcol.g, button.bgcol.b, button.bgcol.a);
-        cairo_arc(CAIRO, pos.x, pos.y, scaledButtonSize / 2, 0, 2 * M_PI);
-        cairo_fill(CAIRO);
+            cairo_set_source_rgba(CAIRO, button.bgcol.r, button.bgcol.g, button.bgcol.b, button.bgcol.a);
+            cairo_arc(CAIRO, pos.x, pos.y, scaledButtonSize / 2, 0, 2 * M_PI);
+            cairo_fill(CAIRO);
 
-        offset += scaledButtonsPad + scaledButtonSize;
+            offset += scaledButtonsPad + scaledButtonSize;
+        }
+    } else {
+        for (size_t i = 0; i < visibleCount && i < g_pGlobalState->buttons.size(); ++i) {
+            const auto& button = g_pGlobalState->buttons[i];
+            const auto  scaledButtonSize = button.size * scale;
+            const auto  scaledButtonsPad = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) * scale;
+
+            const auto  pos = Vector2D{BUTTONSRIGHT ? bufferSize.x - offset - scaledButtonSize / 2.0 : offset + scaledButtonSize / 2.0, bufferSize.y / 2.0}.floor();
+
+            cairo_set_source_rgba(CAIRO, button.bgcol.r, button.bgcol.g, button.bgcol.b, button.bgcol.a);
+            cairo_arc(CAIRO, pos.x, pos.y, scaledButtonSize / 2, 0, 2 * M_PI);
+            cairo_fill(CAIRO);
+
+            offset += scaledButtonsPad + scaledButtonSize;
+        }
     }
 
     // copy the data to an OpenGL texture we have
@@ -497,41 +540,79 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
     int                offset        = m_bForcedBarPadding.value_or(**PBARPADDING) * scale;
     float              noScaleOffset = m_bForcedBarPadding.value_or(**PBARPADDING);
 
-    const auto& buttons = m_windowRuleButtons.empty() ? g_pGlobalState->buttons : m_windowRuleButtons;
-    for (size_t i = 0; i < visibleCount && i < buttons.size(); ++i) {
-        const auto& button = buttons[i];
-        const auto scaledButtonSize = button.size * scale;
-        const auto scaledButtonsPad = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) * scale;
+    if (!m_windowRuleButtons.empty()) {
+        for (size_t i = 0; i < visibleCount && i < m_windowRuleButtons.size(); ++i) {
+            const auto& button = m_windowRuleButtons[i];
+            const auto scaledButtonSize = button.size * scale;
+            const auto scaledButtonsPad = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) * scale;
 
-        // check if hovering here
-        const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
-        Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) - button.size - noScaleOffset : noScaleOffset), (BARBUF.y - button.size) / 2.0}.floor();
-        bool       hovering   = VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + button.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING), currentPos.y + button.size);
-        noScaleOffset += m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) + button.size;
+            // check if hovering here
+            const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
+            Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) - button.size - noScaleOffset : noScaleOffset), (BARBUF.y - button.size) / 2.0}.floor();
+            bool       hovering   = VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + button.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING), currentPos.y + button.size);
+            noScaleOffset += m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) + button.size;
 
-        if (button.iconTex->m_texID == 0 /* icon is not rendered */ && !button.icon.empty()) {
-            // render icon
-            const Vector2D BUFSIZE = {scaledButtonSize, scaledButtonSize};
-            auto           fgcol   = button.userfg ? button.fgcol : (button.bgcol.r + button.bgcol.g + button.bgcol.b < 1) ? CHyprColor(0xFFFFFFFF) : CHyprColor(0xFF000000);
+            if (button.iconTex->m_texID == 0 /* icon is not rendered */ && !button.icon.empty()) {
+                // render icon
+                const Vector2D BUFSIZE = {scaledButtonSize, scaledButtonSize};
+                auto           fgcol   = button.userfg ? button.fgcol : (button.bgcol.r + button.bgcol.g + button.bgcol.b < 1) ? CHyprColor(0xFFFFFFFF) : CHyprColor(0xFF000000);
 
-            renderText(button.iconTex, button.icon, fgcol, BUFSIZE, scale, button.size * 0.62);
+                renderText(button.iconTex, button.icon, fgcol, BUFSIZE, scale, button.size * 0.62);
+            }
+
+            if (button.iconTex->m_texID == 0)
+                continue;
+
+            CBox pos = {barBox->x + (BUTTONSRIGHT ? barBox->width - offset - scaledButtonSize : offset), barBox->y + (barBox->height - scaledButtonSize) / 2.0, scaledButtonSize,
+                        scaledButtonSize};
+
+            if (!localIconOnHover || (localIconOnHover && m_iButtonHoverState > 0))
+                g_pHyprOpenGL->renderTexture(button.iconTex, pos, a);
+            offset += scaledButtonsPad + scaledButtonSize;
+
+            bool currentBit = (m_iButtonHoverState & (1 << i)) != 0;
+            if (hovering != currentBit) {
+                m_iButtonHoverState ^= (1 << i);
+                // damage to get rid of some artifacts when icons are "hidden"
+                damageEntire();
+            }
         }
+    } else {
+        for (size_t i = 0; i < visibleCount && i < g_pGlobalState->buttons.size(); ++i) {
+            const auto& button = g_pGlobalState->buttons[i];
+            const auto scaledButtonSize = button.size * scale;
+            const auto scaledButtonsPad = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) * scale;
 
-        if (button.iconTex->m_texID == 0)
-            continue;
+            // check if hovering here
+            const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
+            Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) - button.size - noScaleOffset : noScaleOffset), (BARBUF.y - button.size) / 2.0}.floor();
+            bool       hovering   = VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + button.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING), currentPos.y + button.size);
+            noScaleOffset += m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) + button.size;
 
-        CBox pos = {barBox->x + (BUTTONSRIGHT ? barBox->width - offset - scaledButtonSize : offset), barBox->y + (barBox->height - scaledButtonSize) / 2.0, scaledButtonSize,
-                    scaledButtonSize};
+            if (button.iconTex->m_texID == 0 /* icon is not rendered */ && !button.icon.empty()) {
+                // render icon
+                const Vector2D BUFSIZE = {scaledButtonSize, scaledButtonSize};
+                auto           fgcol   = button.userfg ? button.fgcol : (button.bgcol.r + button.bgcol.g + button.bgcol.b < 1) ? CHyprColor(0xFFFFFFFF) : CHyprColor(0xFF000000);
 
-        if (!localIconOnHover || (localIconOnHover && m_iButtonHoverState > 0))
-            g_pHyprOpenGL->renderTexture(button.iconTex, pos, a);
-        offset += scaledButtonsPad + scaledButtonSize;
+                renderText(button.iconTex, button.icon, fgcol, BUFSIZE, scale, button.size * 0.62);
+            }
 
-        bool currentBit = (m_iButtonHoverState & (1 << i)) != 0;
-        if (hovering != currentBit) {
-            m_iButtonHoverState ^= (1 << i);
-            // damage to get rid of some artifacts when icons are "hidden"
-            damageEntire();
+            if (button.iconTex->m_texID == 0)
+                continue;
+
+            CBox pos = {barBox->x + (BUTTONSRIGHT ? barBox->width - offset - scaledButtonSize : offset), barBox->y + (barBox->height - scaledButtonSize) / 2.0, scaledButtonSize,
+                        scaledButtonSize};
+
+            if (!localIconOnHover || (localIconOnHover && m_iButtonHoverState > 0))
+                g_pHyprOpenGL->renderTexture(button.iconTex, pos, a);
+            offset += scaledButtonsPad + scaledButtonSize;
+
+            bool currentBit = (m_iButtonHoverState & (1 << i)) != 0;
+            if (hovering != currentBit) {
+                m_iButtonHoverState ^= (1 << i);
+                // damage to get rid of some artifacts when icons are "hidden"
+                damageEntire();
+            }
         }
     }
 }
@@ -786,12 +867,12 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
         auto params = splitByDelimiter(arg, ">|<");
         if (params.size() >= 4) {
             WindowRuleButton btn;
-            btn.bgcol = params[0];
+            btn.bgcol = CHyprColor(configStringToInt(params[0]).value_or(0));
             btn.size = std::stoi(params[1]);
             btn.icon = params[2];
             btn.cmd = params[3];
             if (params.size() >= 5)
-                btn.fgcol = params[4];
+                btn.fgcol = CHyprColor(configStringToInt(params[4]).value_or(0));
             btn.iconTex = makeShared<CTexture>();
             m_windowRuleButtons.push_back(btn);
         }
@@ -823,18 +904,33 @@ void CHyprBar::damageOnButtonHover() {
 
     const auto         COORDS = cursorRelativeToBar();
 
-    const auto& buttons = m_windowRuleButtons.empty() ? g_pGlobalState->buttons : m_windowRuleButtons;
-    for (auto& b : buttons) {
-        const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
-        Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) - b.size - offset : offset), (BARBUF.y - b.size) / 2.0}.floor();
+    if (!m_windowRuleButtons.empty()) {
+        for (auto& b : m_windowRuleButtons) {
+            const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
+            Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) - b.size - offset : offset), (BARBUF.y - b.size) / 2.0}.floor();
 
-        bool       hover = VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + b.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING), currentPos.y + b.size);
+            bool       hover = VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + b.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING), currentPos.y + b.size);
 
-        if (hover != m_bButtonHovered) {
-            m_bButtonHovered = hover;
-            damageEntire();
+            if (hover != m_bButtonHovered) {
+                m_bButtonHovered = hover;
+                damageEntire();
+            }
+
+            offset += m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) + b.size;
         }
+    } else {
+        for (auto& b : g_pGlobalState->buttons) {
+            const auto BARBUF     = Vector2D{(int)assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT)};
+            Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) - b.size - offset : offset), (BARBUF.y - b.size) / 2.0}.floor();
 
-        offset += m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) + b.size;
+            bool       hover = VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + b.size + m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING), currentPos.y + b.size);
+
+            if (hover != m_bButtonHovered) {
+                m_bButtonHovered = hover;
+                damageEntire();
+            }
+
+            offset += m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) + b.size;
+        }
     }
 }
