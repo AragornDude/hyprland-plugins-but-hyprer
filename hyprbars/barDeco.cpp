@@ -153,7 +153,8 @@ void CHyprBar::handleDownEvent(SCallbackInfo& info, std::optional<ITouch::SDownE
     static auto* const PBARPADDING       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_padding")->getDataStaticPtr();
     static auto* const PALIGNBUTTONS     = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_buttons_alignment")->getDataStaticPtr();
 
-    const bool         BUTTONSRIGHT = std::string{*PALIGNBUTTONS} != "left";
+    const std::string& buttonsAlign = m_bForcedBarButtonsAlignment.value_or(*PALIGNBUTTONS);
+    const bool BUTTONSRIGHT = buttonsAlign != "left";
 
     if (!VECINRECT(COORDS, 0, 0, assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT) - 1)) {
 
@@ -302,7 +303,8 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
     static auto* const PBARPADDING       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_padding")->getDataStaticPtr();
     static auto* const PBARBUTTONPADDING = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_button_padding")->getDataStaticPtr();
 
-    const bool         BUTTONSRIGHT = std::string{*PALIGNBUTTONS} != "left";
+    const std::string& buttonsAlign = m_bForcedBarButtonsAlignment.value_or(*PALIGNBUTTONS);
+    const bool BUTTONSRIGHT = buttonsAlign != "left";
 
     const auto         PWINDOW = m_pWindow.lock();
 
@@ -416,7 +418,8 @@ void CHyprBar::renderBarButtons(const Vector2D& bufferSize, const float scale) {
     static auto* const PBARPADDING       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_padding")->getDataStaticPtr();
     static auto* const PALIGNBUTTONS     = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_buttons_alignment")->getDataStaticPtr();
 
-    const bool         BUTTONSRIGHT = std::string{*PALIGNBUTTONS} != "left";
+    const std::string& buttonsAlign = m_bForcedBarButtonsAlignment.value_or(*PALIGNBUTTONS);
+    const bool BUTTONSRIGHT = buttonsAlign != "left";
     const auto         visibleCount = getVisibleButtonCount(PBARBUTTONPADDING, PBARPADDING, bufferSize, scale);
 
     const auto         CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, bufferSize.x, bufferSize.y);
@@ -471,7 +474,8 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
     static auto* const PICONONHOVER      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:icon_on_hover")->getDataStaticPtr();
     const bool localIconOnHover = m_bForcedIconOnHover.has_value() ? (m_bForcedIconOnHover.value() != 0) : (**PICONONHOVER != 0);
 
-    const bool         BUTTONSRIGHT = std::string{*PALIGNBUTTONS} != "left";
+    const std::string& buttonsAlign = m_bForcedBarButtonsAlignment.value_or(*PALIGNBUTTONS);
+    const bool BUTTONSRIGHT = buttonsAlign != "left";
     const auto         visibleCount = getVisibleButtonCount(PBARBUTTONPADDING, PBARPADDING, Vector2D{barBox->w, barBox->h}, scale);
     const auto         COORDS       = cursorRelativeToBar();
 
@@ -556,7 +560,8 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     CHyprColor color = m_cRealBarColor->value();
 
     color.a *= a;
-    const bool BUTTONSRIGHT = std::string{*PALIGNBUTTONS} != "left";
+    const std::string& buttonsAlign = m_bForcedBarButtonsAlignment.value_or(*PALIGNBUTTONS);
+    const bool BUTTONSRIGHT = buttonsAlign != "left";
     const bool SHOULDBLUR   = localBlur && **PENABLEBLURGLOBAL && color.a < 1.F;
 
     if (m_bForcedBarHeight.value_or(**PHEIGHT) < 1) {
@@ -779,7 +784,9 @@ void CHyprBar::damageOnButtonHover() {
     static auto* const PBARBUTTONPADDING = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_button_padding")->getDataStaticPtr();
     static auto* const PHEIGHT           = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_height")->getDataStaticPtr();
     static auto* const PALIGNBUTTONS     = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_buttons_alignment")->getDataStaticPtr();
-    const bool         BUTTONSRIGHT      = std::string{*PALIGNBUTTONS} != "left";
+    
+    const std::string& buttonsAlign = m_bForcedBarButtonsAlignment.value_or(*PALIGNBUTTONS);
+    const bool BUTTONSRIGHT = buttonsAlign != "left";
 
     float              offset = m_bForcedBarPadding.value_or(**PBARPADDING);
 
