@@ -61,24 +61,25 @@ class CHyprBar : public IHyprWindowDecoration {
     bool                      m_bTitleColorChanged = false;
     bool                      m_bButtonHovered     = false;
     bool                      m_bLastEnabledState  = false;
-    std::optional<CHyprColor> m_bForcedBarColor;
-    std::optional<CHyprColor> m_bForcedTitleColor;
+
+    // Bar Window Rules
     std::optional<int> m_bForcedBarHeight;
-    std::optional<int> m_bForcedBarTextSize;
     std::optional<int> m_bForcedBarPadding;
-    std::optional<int> m_bForcedBarButtonPadding;
+    std::optional<CHyprColor> m_bForcedBarColor;
     std::optional<int> m_bForcedBarBlur;
-    std::optional<int>m_bForcedBarTitleEnabled;
     std::optional<int> m_bForcedBarPartOfWindow;
     std::optional<int> m_bForcedBarPrecedenceOverBorder;
-    std::optional<int> m_bForcedIconOnHover;
+    // Title Window Rules
+    std::optional<int>m_bForcedBarTitleEnabled;
     std::optional<std::string> m_bForcedBarTextFont;
+    std::optional<int> m_bForcedBarTextSize;
     std::optional<std::string> m_bForcedBarTextAlign;
-    std::optional<std::string> m_bForcedBarButtonsAlignment;
-
+    std::optional<CHyprColor> m_bForcedTitleColor;
     std::optional<std::string> m_bForcedBarCustomTitle;
-
-
+    // Buttons Window Rules
+    std::optional<int> m_bForcedIconOnHover;
+    std::optional<std::string> m_bForcedBarButtonsAlignment;
+    std::optional<int> m_bForcedBarButtonPadding;
     struct WindowRuleButton {
       CHyprColor bgcol;
       int size;
@@ -88,8 +89,8 @@ class CHyprBar : public IHyprWindowDecoration {
       SP<CTexture> iconTex = makeShared<CTexture>();
       bool userfg = false;
     };
-
     std::vector<WindowRuleButton> m_windowRuleButtons;
+
     PHLANIMVAR<CHyprColor>    m_cRealBarColor;
 
     Vector2D                  cursorRelativeToBar();

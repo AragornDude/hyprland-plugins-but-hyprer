@@ -869,27 +869,41 @@ void CHyprBar::updateRules() {
 
 void CHyprBar::applyRule(const SP<CWindowRule>& r) {
     auto arg = r->m_rule.substr(r->m_rule.find_first_of(' ') + 1);
-
+    // Bar Window Rules
     if (r->m_rule == "plugin:hyprbars:nobar")
         m_hidden = true;
-
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_height"))
+        m_bForcedBarHeight = configStringToInt(arg).value_or(0);
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_padding"))
+        m_bForcedBarPadding = configStringToInt(arg).value_or(0);
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
+        m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_blur"))
         m_bForcedBarBlur = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_title_enabled"))
-        m_bForcedBarTitleEnabled = configStringToInt(arg).value_or(0);
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_part_of_window"))
         m_bForcedBarPartOfWindow = configStringToInt(arg).value_or(0);
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_precedence_over_border"))
         m_bForcedBarPrecedenceOverBorder = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:icon_on_hover"))
-        m_bForcedIconOnHover = configStringToInt(arg).value_or(0);
+    // Title Window Rules
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_title_enabled"))
+        m_bForcedBarTitleEnabled = configStringToInt(arg).value_or(0);
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_font"))
         m_bForcedBarTextFont = arg;
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_size"))
+        m_bForcedBarTextSize = configStringToInt(arg).value_or(0);
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_align"))
         m_bForcedBarTextAlign = arg;
+    else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))
+        m_bForcedTitleColor = CHyprColor(configStringToInt(arg).value_or(0));
+    else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-title"))
+        m_bForcedBarCustomTitle = arg;
+    // Buttons Window Rules
+    else if (r->m_rule.starts_with("plugin:hyprbars:icon_on_hover"))
+        m_bForcedIconOnHover = configStringToInt(arg).value_or(0);
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_buttons_alignment"))
         m_bForcedBarButtonsAlignment = arg;
-
+    else if (r->m_rule.starts_with("plugin:hyprbars:bar_button_padding"))
+        m_bForcedBarButtonPadding = configStringToInt(arg).value_or(0);
     else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-button")){
         auto params = splitByDelimiter(arg, ">|<");
         if (params.size() >= 4) {
@@ -905,20 +919,6 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
             m_windowRuleButtons.push_back(btn);
         }
     }
-    else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-title"))
-        m_bForcedBarCustomTitle = arg;
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
-        m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
-    else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))
-        m_bForcedTitleColor = CHyprColor(configStringToInt(arg).value_or(0));
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_height"))
-        m_bForcedBarHeight = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_size"))
-        m_bForcedBarTextSize = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_padding"))
-        m_bForcedBarPadding = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_button_padding"))
-        m_bForcedBarButtonPadding = configStringToInt(arg).value_or(0);
 }
 
 void CHyprBar::damageOnButtonHover() {
