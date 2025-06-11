@@ -13,6 +13,7 @@ plugin {
     hyprbars {
         # example config
         bar_height = 20
+        bar_blur = 1
 
         # example buttons (R -> L)
         # hyprbars-button = color, size, on-click
@@ -20,6 +21,9 @@ plugin {
         hyprbars-button = rgb(eeee11), 10, , hyprctl dispatch fullscreen 1
     }
 }
+windowrulev2 = plugin:hyprbars:bar_height 10, ^floating:0
+windowrulev2 = plugin:hyprbars:bar_blur 0, ^floating:0
+windowrulev2 = plugin:hyprbars:hyprbars-title Kitty -- {OriginalTitle} -- {Date}, class:^(kitty)$
 ```
 
 `enabled` -> (bool) whether to enable the bars
@@ -62,8 +66,41 @@ hyprbars-button = bgcolor, size, icon, on-click, fgcolor
 
 ## Window rules
 
-Hyprbars supports the following _dynamic_ window rules:
+The Hyprer version of Hyprbars supports window rules for all of the above values (yes including the buttons), as well as adds a window rule for custom titles:
+
+All of the plugins can be configured using this convention which changes the default value based on the window rule(example shown with non-floating window rule):
+
+`windowrulev2 = plugin:hyprbars:bar_height 20, ^floating:0` -> (int) Changes the bar_height.
+
+`windowrulev2 = plugin:hyprbars:bar_blur 1, ^floating:0` -> (bool) Changes the bar_blur.
+
+`windowrulev2 = plugin:hyprbars:bar_color rgba(ff00007f), ^floating:0` -> (col) Changes the bar_color.
+
+`windowrulev2 = plugin:hyprbars:bar_text_font Jetbrains Mono Nerd Font Mono Italic, ^floating:0` -> (str) Changes the bar_text_font. (Note that everything after plugin:hyprbars:bar_text_font but before the comma is passed as a single string)
+
+The only exception to this rule is the enabled boolean. This one was created as nobar in the original plugin, so to maintain compatibility I kept it as it was.
 
 `plugin:hyprbars:nobar` -> disables the bar on matching windows.
-`plugin:hyprbars:bar_color` -> sets the bar background color on matching windows.
-`plugin:hyprbars:title_color` -> sets the bar title color on matching windows.
+
+## Custom Titles
+
+I also added custom title window rules. These titles can be formatted with variables. In the current iteration there are three variables:
+
+`{OriginalTitle}` -> The original title that would show by default.
+
+`{Date}` -> The current date in %Y-%m-%d formatting.
+
+`{Time}` -> The current time in %H:%M:%S formatting.
+
+An example of this as a window rule would be:
+
+`windowrulev2 = plugin:hyprbars:hyprbars-title Kitty -- {OriginalTitle} -- {Date}, class:^(kitty)$`
+
+I plan to add more variables, as well as ways to add your own. One known issue with this is that the title won't update unless the window focus is changed, so for something like the `{Time}` variable, it won't update automatically every second. So I plan to add a window rule to add a manual update interval.
+
+## Button Window Rules
+
+Defining Buttons in the original plugin involved passing multiple arguments, which makes things a little more difficult for window rules that only allow one argument to be passed before the window rule is applied. For this reason I had to pass all the arguments as one string, using a different delimeter than the comma. For this I used ">|<" as shown below.
+
+`windowrulev2 = plugin:hyprbars:bar_button rgba(ff0000ff)>|<10>|<X>|<hyprctl dispatch killactive>|<rgba(0000ffff), ^floating:0` -> Creates a button on only non-floating windows.
+Any window that this matches will clear any buttons created the original way and only use the ones that use the window rule. For this reason, if you want a truly universal button (for example, a close button) you'll want to use `class:.*` or some other window rule that matches all windows.

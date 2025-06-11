@@ -5,13 +5,13 @@
 }:
 hyprlandPlugins.mkHyprlandPlugin hyprland {
   pluginName = "hyprbars";
-  version = "0.1";
+  version = "2.0";
   src = ./.;
 
   inherit (hyprland) nativeBuildInputs;
 
   meta = with lib; {
-    homepage = "https://github.com/hyprwm/hyprland-plugins";
+    homepage = "https://github.com/hyprwm/hyprland-plugins-but-hyprer";
     description = "Hyprland window title plugin";
     license = licenses.bsd3;
     platforms = platforms.linux;

@@ -158,7 +158,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
     HyprlandAPI::addNotification(PHANDLE, "[hyprbars] Initialized successfully!", CHyprColor{0.2, 1.0, 0.2, 1.0}, 5000);
 
-    return {"hyprbars", "A plugin to add title bars to windows.", "Vaxry", "1.0"};
+    return {"hyprbars", "A plugin to add title bars to windows.", "AragornDude and Vaxry", "2.0"};
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {

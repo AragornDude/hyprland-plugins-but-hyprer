@@ -23,7 +23,7 @@
 [hyprbars]
 description = "A plugin to add title bars to windows"
 version = "1.0"
-authors = ["Vaxry"]
+authors = ["AragornDude", "Vaxry"]
 
 [hyprbars.build]
 output = "hyprbars/hyprbars.so"

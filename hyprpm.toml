@@ -51,7 +51,7 @@ authors = ["Vaxry"]
 
 [hyprbars]
 description = "A plugin to add title bars to windows"
-authors = ["Vaxry"]
+authors = ["AragornDude", "Vaxry"]
 output = "hyprbars/hyprbars.so"
 build = [
     "make -C hyprbars all",
