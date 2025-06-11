@@ -76,6 +76,8 @@ class CHyprBar : public IHyprWindowDecoration {
     std::optional<std::string> m_bForcedBarTextAlign;
     std::optional<std::string> m_bForcedBarButtonsAlignment;
 
+    std::optional<std::string> m_bForcedBarCustomTitle;
+
 
     struct WindowRuleButton {
       CHyprColor bgcol;

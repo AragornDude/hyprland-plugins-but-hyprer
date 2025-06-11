@@ -15,6 +15,29 @@
 #include "BarPassElement.hpp"
 
 
+
+std::string substituteTitleVars(const std::string& tpl, const std::string& originalTitle) {
+    std::string result = tpl;
+
+    // Date and Time
+    std::time_t t = std::time(nullptr);
+    std::tm tm;
+    localtime_r(&t, &tm);
+    char dateBuf[32], timeBuf[32];
+    std::strftime(dateBuf, sizeof(dateBuf), "%Y-%m-%d", &tm);
+    std::strftime(timeBuf, sizeof(timeBuf), "%H:%M:%S", &tm);
+
+    // Replace variables
+    size_t pos;
+    while ((pos = result.find("{OriginalTitle}")) != std::string::npos)
+        result.replace(pos, 15, originalTitle);
+    while ((pos = result.find("{Date}")) != std::string::npos)
+        result.replace(pos, 6, dateBuf);
+    while ((pos = result.find("{Time}")) != std::string::npos)
+        result.replace(pos, 6, timeBuf);
+
+    return result;
+}
 std::vector<std::string> splitByDelimiter(const std::string& str, const std::string& delim) {
     std::vector<std::string> out;
     size_t start = 0, end;
@@ -724,7 +747,11 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     // render title
     int currentTextSize = m_bForcedBarTextSize.value_or(**((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_text_size")->getDataStaticPtr()));
     if (localTitleEnabled && (m_szLastTitle != PWINDOW->m_title || m_bWindowSizeChanged || m_pTextTex->m_texID == 0 || m_bTitleColorChanged || m_iLastTextSize != currentTextSize)) {
-        m_szLastTitle = PWINDOW->m_title;
+        if (m_bForcedBarCustomTitle.has_value()) {
+            m_szLastTitle = substituteTitleVars(m_bForcedBarCustomTitle.value(), PWINDOW->m_title);
+        } else {
+            m_szLastTitle = PWINDOW->m_title;
+        }
         renderBarTitle(BARBUF, pMonitor->m_scale);
         m_iLastTextSize = currentTextSize;
     }
@@ -878,6 +905,8 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
             m_windowRuleButtons.push_back(btn);
         }
     }
+    else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-title"))
+        m_bForcedBarCustomTitle = arg;
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))
