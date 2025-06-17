@@ -38,9 +38,9 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     };
 
     replaceAll(result, "{OriginalTitle}", PWINDOW->m_title);
-    replaceAll(result, "{Class}", PWINDOW->m_szClass);
-    replaceAll(result, "{InitialTitle}", PWINDOW->m_szInitialTitle);
-    replaceAll(result, "{InitialClass}", PWINDOW->m_szInitialClass);
+    replaceAll(result, "{Class}", PWINDOW->m_Class);
+    replaceAll(result, "{InitialTitle}", PWINDOW->m_InitialTitle);
+    replaceAll(result, "{InitialClass}", PWINDOW->m_InitialClass);
     replaceAll(result, "{Date}", dateBuf);
     replaceAll(result, "{Time}", timeBuf);
 
