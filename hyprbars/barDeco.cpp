@@ -210,9 +210,11 @@ void CHyprBar::handleDownEvent(SCallbackInfo& info, std::optional<ITouch::SDownE
     static auto* const PBARBUTTONPADDING = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_button_padding")->getDataStaticPtr();
     static auto* const PBARPADDING       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_padding")->getDataStaticPtr();
     static auto* const PALIGNBUTTONS     = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_buttons_alignment")->getDataStaticPtr();
+    static auto* const PONDOUBLECLICK    = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:on_double_click")->getDataStaticPtr();
 
     const std::string& buttonsAlign = m_bForcedBarButtonsAlignment.value_or(*PALIGNBUTTONS);
-    const bool BUTTONSRIGHT = buttonsAlign != "left";
+    const bool BUTTONSRIGHT    = buttonsAlign != "left";
+    const std::string  ON_DOUBLE_CLICK = *PONDOUBLECLICK;
 
     if (!VECINRECT(COORDS, 0, 0, assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT) - 1)) {
 
@@ -241,8 +243,17 @@ void CHyprBar::handleDownEvent(SCallbackInfo& info, std::optional<ITouch::SDownE
     info.cancelled   = true;
     m_bCancelledDown = true;
 
-    if (!doButtonPress(PBARPADDING, PBARBUTTONPADDING, PHEIGHT, COORDS, BUTTONSRIGHT))
-        m_bDragPending = true;
+    if (doButtonPress(PBARPADDING, PBARBUTTONPADDING, PHEIGHT, COORDS, BUTTONSRIGHT))
+        return;
+
+    if (!ON_DOUBLE_CLICK.empty() &&
+        std::chrono::duration_cast<std::chrono::milliseconds>(Time::steadyNow() - m_lastMouseDown).count() < 400 /* Arbitrary delay I found suitable */) {
+        g_pKeybindManager->m_dispatchers["exec"](ON_DOUBLE_CLICK);
+        m_bDragPending = false;
+    } else {
+        m_lastMouseDown = Time::steadyNow();
+        m_bDragPending  = true;
+    }
 }
 
 void CHyprBar::handleUpEvent(SCallbackInfo& info) {
