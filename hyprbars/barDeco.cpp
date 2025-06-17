@@ -105,7 +105,7 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     replaceAll(result, "{lastCycledWindow}", std::to_string((uintptr_t)PWINDOW->m_lastCycledWindow.get()));
     replaceAll(result, "{self}", std::to_string((uintptr_t)PWINDOW->m_self.get()));
     replaceAll(result, "{swallowed}", std::to_string((uintptr_t)PWINDOW->m_swallowed.get()));
-    replaceAll(result, "{workspace}", PWINDOW->m_workspace ? PHWINDOW->m_workspace->m_name : "none");
+    replaceAll(result, "{workspace}", PWINDOW->m_workspace ? PWINDOW->m_workspace->m_name : "none");
 
     replaceAll(result, "{Date}", dateBuf);
     replaceAll(result, "{Time}", timeBuf);
