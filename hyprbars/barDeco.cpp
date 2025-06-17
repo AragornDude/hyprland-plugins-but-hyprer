@@ -47,8 +47,7 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     replaceAll(result, "{InitialTitle}", PWINDOW->m_initialTitle);
     replaceAll(result, "{InitialClass}", PWINDOW->m_initialClass);
     replaceAll(result, "{initialWorkspaceToken}", PWINDOW->m_initialWorkspaceToken);
-    // Hyprctl Window Variables Untested (those returned by 'hyprctl clients')
-    replaceAll(result, "{initialWorkspaceToken}", PWINDOW->m_initialWorkspaceToken);
+    // Bools Ints and Floats
     replaceAll(result, "{isPseudotiled}", PWINDOW->m_isPseudotiled ? "true" : "false");
     replaceAll(result, "{firstMap}", PWINDOW->m_firstMap ? "true" : "false");
     replaceAll(result, "{isFloating}", PWINDOW->m_isFloating ? "true" : "false");
@@ -73,8 +72,20 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     replaceAll(result, "{stayFocused}", PWINDOW->m_stayFocused ? "true" : "false");
     replaceAll(result, "{tearingHint}", PWINDOW->m_tearingHint ? "true" : "false");
     replaceAll(result, "{X11SurfaceScaledBy}", std::to_string(PWINDOW->m_X11SurfaceScaledBy));
-
-
+    
+    // Hyprctl Window Variables Untested (those returned by 'hyprctl clients')
+    replaceAll(result, "{floatingOffset}", vecToStr(PWINDOW->m_floatingOffset));
+    replaceAll(result, "{lastFloatingPosition}", vecToStr(PWINDOW->m_lastFloatingPosition));
+    replaceAll(result, "{lastFloatingSize}", vecToStr(PWINDOW->m_lastFloatingSize));
+    replaceAll(result, "{originalClosedPos}", vecToStr(PWINDOW->m_originalClosedPos));
+    replaceAll(result, "{originalClosedSize}", vecToStr(PWINDOW->m_originalClosedSize));
+    replaceAll(result, "{pendingReportedSize}", vecToStr(PWINDOW->m_pendingReportedSize));
+    replaceAll(result, "{position}", vecToStr(PWINDOW->m_position));
+    replaceAll(result, "{pseudoSize}", vecToStr(PWINDOW->m_pseudoSize));
+    replaceAll(result, "{relativeCursorCoordsOnLastWarp}", vecToStr(PWINDOW->m_relativeCursorCoordsOnLastWarp));
+    replaceAll(result, "{reportedPosition}", vecToStr(PWINDOW->m_reportedPosition));
+    replaceAll(result, "{reportedSize}", vecToStr(PWINDOW->m_reportedSize));
+    replaceAll(result, "{size}", vecToStr(PWINDOW->m_size));
 
 
 
