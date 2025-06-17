@@ -39,6 +39,9 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     auto vecToStr = [](const Vector2D& v) {
         return std::to_string(v.x) + "," + std::to_string(v.y);
     };
+    auto colorToStr = [](const CHyprColor& c) {
+        return std::to_string(c.r) + "," + std::to_string(c.g) + "," + std::to_string(c.b) + "," + std::to_string(c.a);
+    };
 
     // Hyprctl Window Variables Working (those returned by 'hyprctl clients')
     // Strings
@@ -72,8 +75,7 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     replaceAll(result, "{stayFocused}", PWINDOW->m_stayFocused ? "true" : "false");
     replaceAll(result, "{tearingHint}", PWINDOW->m_tearingHint ? "true" : "false");
     replaceAll(result, "{X11SurfaceScaledBy}", std::to_string(PWINDOW->m_X11SurfaceScaledBy));
-    
-    // Hyprctl Window Variables Untested (those returned by 'hyprctl clients')
+    // Vector2D
     replaceAll(result, "{floatingOffset}", vecToStr(PWINDOW->m_floatingOffset));
     replaceAll(result, "{lastFloatingPosition}", vecToStr(PWINDOW->m_lastFloatingPosition));
     replaceAll(result, "{lastFloatingSize}", vecToStr(PWINDOW->m_lastFloatingSize));
@@ -87,8 +89,23 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     replaceAll(result, "{reportedSize}", vecToStr(PWINDOW->m_reportedSize));
     replaceAll(result, "{size}", vecToStr(PWINDOW->m_size));
 
-
-
+    // Hyprctl Window Variables Untested (those returned by 'hyprctl clients')
+    replaceAll(result, "{activeInactiveAlpha}", std::to_string(PWINDOW->m_activeInactiveAlpha->value()));
+    replaceAll(result, "{alpha}", std::to_string(PWINDOW->m_alpha->value()));
+    replaceAll(result, "{borderAngleAnimationProgress}", std::to_string(PWINDOW->m_borderAngleAnimationProgress->value()));
+    replaceAll(result, "{borderFadeAnimationProgress}", std::to_string(PWINDOW->m_borderFadeAnimationProgress->value()));
+    replaceAll(result, "{dimPercent}", std::to_string(PWINDOW->m_dimPercent->value()));
+    replaceAll(result, "{movingFromWorkspaceAlpha}", std::to_string(PWINDOW->m_movingFromWorkspaceAlpha->value()));
+    replaceAll(result, "{movingToWorkspaceAlpha}", std::to_string(PWINDOW->m_movingToWorkspaceAlpha->value()));
+    replaceAll(result, "{notRespondingTint}", std::to_string(PWINDOW->m_notRespondingTint->value()));
+    replaceAll(result, "{realPosition}", vecToStr(PWINDOW->m_realPosition->value()));
+    replaceAll(result, "{realSize}", vecToStr(PWINDOW->m_realSize->value()));
+    replaceAll(result, "{realShadowColor}", colorToStr(PWINDOW->m_realShadowColor->value()));
+    replaceAll(result, "{monitor}", std::to_string((uintptr_t)PWINDOW->m_monitor.get()));
+    replaceAll(result, "{lastCycledWindow}", std::to_string((uintptr_t)PWINDOW->m_lastCycledWindow.get()));
+    replaceAll(result, "{self}", std::to_string((uintptr_t)PWINDOW->m_self.get()));
+    replaceAll(result, "{swallowed}", std::to_string((uintptr_t)PWINDOW->m_swallowed.get()));
+    replaceAll(result, "{workspace}", PWINDOW->m_workspace ? PHWINDOW->m_workspace->m_name : "none");
 
     replaceAll(result, "{Date}", dateBuf);
     replaceAll(result, "{Time}", timeBuf);
