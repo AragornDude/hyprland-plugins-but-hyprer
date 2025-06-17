@@ -88,8 +88,7 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     replaceAll(result, "{reportedPosition}", vecToStr(PWINDOW->m_reportedPosition));
     replaceAll(result, "{reportedSize}", vecToStr(PWINDOW->m_reportedSize));
     replaceAll(result, "{size}", vecToStr(PWINDOW->m_size));
-
-    // Hyprctl Window Variables Untested (those returned by 'hyprctl clients')
+    // PHL Variables
     replaceAll(result, "{activeInactiveAlpha}", std::to_string(PWINDOW->m_activeInactiveAlpha->value()));
     replaceAll(result, "{alpha}", std::to_string(PWINDOW->m_alpha->value()));
     replaceAll(result, "{borderAngleAnimationProgress}", std::to_string(PWINDOW->m_borderAngleAnimationProgress->value()));
@@ -106,6 +105,24 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     replaceAll(result, "{self}", std::to_string((uintptr_t)PWINDOW->m_self.get()));
     replaceAll(result, "{swallowed}", std::to_string((uintptr_t)PWINDOW->m_swallowed.get()));
     replaceAll(result, "{workspace}", PWINDOW->m_workspace ? PWINDOW->m_workspace->m_name : "none");
+
+    // Hyprctl Window Variables Untested (those returned by 'hyprctl clients')
+    if (PWINDOW->m_pendingSizeAck.has_value()) {
+        auto& val = PWINDOW->m_pendingSizeAck.value();
+        replaceAll(result, "{pendingSizeAck}", std::to_string(val.first) + ":" + vecToStr(val.second));
+    } else {
+        replaceAll(result, "{pendingSizeAck}", "none");
+    }
+    replaceAll(result, "{windowDecorationsCount}", std::to_string(PWINDOW->m_windowDecorations.size()));
+    replaceAll(result, "{matchedRulesCount}", std::to_string(PWINDOW->m_matchedRules.size()));
+    replaceAll(result, "{fullscreenInternal}", std::to_string(PWINDOW->m_fullscreenState.internal));
+    replaceAll(result, "{fullscreenClient}", std::to_string(PWINDOW->m_fullscreenState.client));
+    replaceAll(result, "{idleInhibitMode}", std::to_string(PWINDOW->m_idleInhibitMode));
+    replaceAll(result, "{lastSurfaceMonitorID}", std::to_string(PWINDOW->m_lastSurfaceMonitorID));
+    replaceAll(result, "{wantsInitialFullscreenMonitor}", std::to_string(PWINDOW->m_wantsInitialFullscreenMonitor));
+
+
+
 
     replaceAll(result, "{Date}", dateBuf);
     replaceAll(result, "{Time}", timeBuf);
