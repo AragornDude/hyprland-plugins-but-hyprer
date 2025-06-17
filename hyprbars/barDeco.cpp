@@ -36,96 +36,43 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
             pos += to.length();
         }
     };
+    auto vecToStr = [](const Vector2D& v) {
+        return std::to_string(v.x) + "," + std::to_string(v.y);
+    };
 
     // Hyprctl Window Variables Working (those returned by 'hyprctl clients')
-    
+    // Strings
     replaceAll(result, "{Title}", PWINDOW->m_title);
     replaceAll(result, "{Class}", PWINDOW->m_class);
     replaceAll(result, "{InitialTitle}", PWINDOW->m_initialTitle);
     replaceAll(result, "{InitialClass}", PWINDOW->m_initialClass);
-    // Hyprctl Window Variables Untested (those returned by 'hyprctl clients')
-    // replaceAll(result, "{wlSurface}", PWINDOW->m_wlSurface);
-    // replaceAll(result, "{xdgSurface}", PWINDOW->m_xdgSurface);
-    // replaceAll(result, "{xwaylandSurface}", PWINDOW->m_xwaylandSurface);
-    // replaceAll(result, "{position}", PWINDOW->m_position);
-    // replaceAll(result, "{size}", PWINDOW->m_size);
-    // replaceAll(result, "{realPosition}", PWINDOW->m_realPosition);
-    // replaceAll(result, "{realSize}", PWINDOW->m_realSize);
-    // replaceAll(result, "{reportedPosition}", PWINDOW->m_reportedPosition);
-    // replaceAll(result, "{reportedSize}", PWINDOW->m_reportedSize);
-    // replaceAll(result, "{pendingReportedSize}", PWINDOW->m_pendingReportedSize);
-    // replaceAll(result, "{pendingSizeAck}", PWINDOW->m_pendingSizeAck);
-    // replaceAll(result, "{pendingSizeAcks}", PWINDOW->m_pendingSizeAcks);
-    // replaceAll(result, "{lastFloatingSize}", PWINDOW->m_lastFloatingSize);
-    // replaceAll(result, "{lastFloatingPosition}", PWINDOW->m_lastFloatingPosition);
-    // replaceAll(result, "{floatingOffset}", PWINDOW->m_floatingOffset);
-    // replaceAll(result, "{isPseudotiled}", PWINDOW->m_isPseudotiled);
-    // replaceAll(result, "{pseudoSize}", PWINDOW->m_pseudoSize);
-    // replaceAll(result, "{relativeCursorCoordsOnLastWarp}", PWINDOW->m_relativeCursorCoordsOnLastWarp);
-    // replaceAll(result, "{firstMap}", PWINDOW->m_firstMap);
-    // replaceAll(result, "{isFloating}", PWINDOW->m_isFloating);
-    // replaceAll(result, "{draggingTiled}", PWINDOW->m_draggingTiled);
-    // replaceAll(result, "{fullscreenState}", PWINDOW->m_fullscreenState);
-    // replaceAll(result, "{title}", PWINDOW->m_title);
-    // replaceAll(result, "{class}", PWINDOW->m_class);
-    // replaceAll(result, "{initialTitle}", PWINDOW->m_initialTitle);
-    // replaceAll(result, "{initialClass}", PWINDOW->m_initialClass);
-    // replaceAll(result, "{workspace}", PWINDOW->m_workspace);
-    // replaceAll(result, "{monitor}", PWINDOW->m_monitor);
-    // replaceAll(result, "{isMapped}", PWINDOW->m_isMapped);
-    // replaceAll(result, "{requestsFloat}", PWINDOW->m_requestsFloat);
-    // replaceAll(result, "{createdOverFullscreen}", PWINDOW->m_createdOverFullscreen);
-    // replaceAll(result, "{isX11}", PWINDOW->m_isX11);
-    // replaceAll(result, "{X11DoesntWantBorders}", PWINDOW->m_X11DoesntWantBorders);
-    // replaceAll(result, "{X11ShouldntFocus}", PWINDOW->m_X11ShouldntFocus);
-    // replaceAll(result, "{X11SurfaceScaledBy}", PWINDOW->m_X11SurfaceScaledBy);
-    // replaceAll(result, "{noInitialFocus}", PWINDOW->m_noInitialFocus);
-    // replaceAll(result, "{wantsInitialFullscreen}", PWINDOW->m_wantsInitialFullscreen);
-    // replaceAll(result, "{wantsInitialFullscreenMonitor}", PWINDOW->m_wantsInitialFullscreenMonitor);
-    // replaceAll(result, "{suppressedEvents}", PWINDOW->m_suppressedEvents);
-    // replaceAll(result, "{subsurfaceHead}", PWINDOW->m_subsurfaceHead);
-    // replaceAll(result, "{popupHead}", PWINDOW->m_popupHead);
-    // replaceAll(result, "{realBorderColor}", PWINDOW->m_realBorderColor);
-    // replaceAll(result, "{realBorderColorPrevious}", PWINDOW->m_realBorderColorPrevious);
-    // replaceAll(result, "{borderFadeAnimationProgress}", PWINDOW->m_borderFadeAnimationProgress);
-    // replaceAll(result, "{borderAngleAnimationProgress}", PWINDOW->m_borderAngleAnimationProgress);
-    // replaceAll(result, "{alpha}", PWINDOW->m_alpha);
-    // replaceAll(result, "{fadingOut}", PWINDOW->m_fadingOut);
-    // replaceAll(result, "{readyToDelete}", PWINDOW->m_readyToDelete);
-    // replaceAll(result, "{originalClosedPos}", PWINDOW->m_originalClosedPos);
-    // replaceAll(result, "{originalClosedSize}", PWINDOW->m_originalClosedSize);
-    // replaceAll(result, "{originalClosedExtents}", PWINDOW->m_originalClosedExtents);
-    // replaceAll(result, "{animatingIn}", PWINDOW->m_animatingIn);
-    // replaceAll(result, "{pinned}", PWINDOW->m_pinned);
-    // replaceAll(result, "{pinFullscreened}", PWINDOW->m_pinFullscreened);
-    // replaceAll(result, "{isUrgent}", PWINDOW->m_isUrgent);
-    // replaceAll(result, "{lastCycledWindow}", PWINDOW->m_lastCycledWindow);
-    // replaceAll(result, "{windowDecorations}", PWINDOW->m_windowDecorations);
-    // replaceAll(result, "{decosToRemove}", PWINDOW->m_decosToRemove);
-    // replaceAll(result, "{windowData}", PWINDOW->m_windowData);
-    // replaceAll(result, "{transformers}", PWINDOW->m_transformers);
-    // replaceAll(result, "{activeInactiveAlpha}", PWINDOW->m_activeInactiveAlpha);
-    // replaceAll(result, "{movingFromWorkspaceAlpha}", PWINDOW->m_movingFromWorkspaceAlpha);
-    // replaceAll(result, "{realShadowColor}", PWINDOW->m_realShadowColor);
-    // replaceAll(result, "{dimPercent}", PWINDOW->m_dimPercent);
-    // replaceAll(result, "{monitorMovedFrom}", PWINDOW->m_monitorMovedFrom);
-    // replaceAll(result, "{movingToWorkspaceAlpha}", PWINDOW->m_movingToWorkspaceAlpha);
-    // replaceAll(result, "{swallowed}", PWINDOW->m_swallowed);
-    // replaceAll(result, "{currentlySwallowed}", PWINDOW->m_currentlySwallowed);
-    // replaceAll(result, "{groupSwallowed}", PWINDOW->m_groupSwallowed);
-    // replaceAll(result, "{stayFocused}", PWINDOW->m_stayFocused);
-    // replaceAll(result, "{lastSurfaceMonitorID}", PWINDOW->m_lastSurfaceMonitorID);
-    // replaceAll(result, "{idleInhibitMode}", PWINDOW->m_idleInhibitMode);
     replaceAll(result, "{initialWorkspaceToken}", PWINDOW->m_initialWorkspaceToken);
-    // replaceAll(result, "{groupData}", PWINDOW->m_groupData);
-    // replaceAll(result, "{groupRules}", PWINDOW->m_groupRules);
-    // replaceAll(result, "{tearingHint}", PWINDOW->m_tearingHint);
-    // replaceAll(result, "{matchedRules}", PWINDOW->m_matchedRules);
-    // replaceAll(result, "{tags}", PWINDOW->m_tags);
-    // replaceAll(result, "{notRespondingTint}", PWINDOW->m_notRespondingTint);
-    // replaceAll(result, "{closeableSince}", PWINDOW->m_closeableSince);
-    // replaceAll(result, "{self}", PWINDOW->m_self);
-    // replaceAll(result, "{listeners}", PWINDOW->m_listeners);
+    // Hyprctl Window Variables Untested (those returned by 'hyprctl clients')
+    replaceAll(result, "{isPseudotiled}", PWINDOW->m_isPseudotiled ? "true" : "false");
+    replaceAll(result, "{firstMap}", PWINDOW->m_firstMap ? "true" : "false");
+    replaceAll(result, "{isFloating}", PWINDOW->m_isFloating ? "true" : "false");
+    replaceAll(result, "{draggingTiled}", PWINDOW->m_draggingTiled ? "true" : "false");
+    replaceAll(result, "{isMapped}", PWINDOW->m_isMapped ? "true" : "false");
+    replaceAll(result, "{requestsFloat}", PWINDOW->m_requestsFloat ? "true" : "false");
+    replaceAll(result, "{createdOverFullscreen}", PWINDOW->m_createdOverFullscreen ? "true" : "false");
+    replaceAll(result, "{isX11}", PWINDOW->m_isX11 ? "true" : "false");
+    replaceAll(result, "{X11DoesntWantBorders}", PWINDOW->m_X11DoesntWantBorders ? "true" : "false");
+    replaceAll(result, "{X11ShouldntFocus}", PWINDOW->m_X11ShouldntFocus ? "true" : "false");
+    replaceAll(result, "{noInitialFocus}", PWINDOW->m_noInitialFocus ? "true" : "false");
+    replaceAll(result, "{wantsInitialFullscreen}", PWINDOW->m_wantsInitialFullscreen ? "true" : "false");
+    replaceAll(result, "{fadingOut}", PWINDOW->m_fadingOut ? "true" : "false");
+    replaceAll(result, "{readyToDelete}", PWINDOW->m_readyToDelete ? "true" : "false");
+    replaceAll(result, "{animatingIn}", PWINDOW->m_animatingIn ? "true" : "false");
+    replaceAll(result, "{pinned}", PWINDOW->m_pinned ? "true" : "false");
+    replaceAll(result, "{pinFullscreened}", PWINDOW->m_pinFullscreened ? "true" : "false");
+    replaceAll(result, "{isUrgent}", PWINDOW->m_isUrgent ? "true" : "false");
+    replaceAll(result, "{monitorMovedFrom}", std::to_string(PWINDOW->m_monitorMovedFrom));
+    replaceAll(result, "{currentlySwallowed}", PWINDOW->m_currentlySwallowed ? "true" : "false");
+    replaceAll(result, "{groupSwallowed}", PWINDOW->m_groupSwallowed ? "true" : "false");
+    replaceAll(result, "{stayFocused}", PWINDOW->m_stayFocused ? "true" : "false");
+    replaceAll(result, "{tearingHint}", PWINDOW->m_tearingHint ? "true" : "false");
+    replaceAll(result, "{const}", PWINDOW->const ? "true" : "false");
+    replaceAll(result, "{X11SurfaceScaledBy}", std::to_string(PWINDOW->m_X11SurfaceScaledBy));
 
 
 
