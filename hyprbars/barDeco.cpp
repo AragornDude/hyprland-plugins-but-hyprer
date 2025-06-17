@@ -17,7 +17,7 @@
 
 
 
-std::string substituteTitleVars(const std::string& tpl, const std::string& originalTitle) {
+std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     std::string result = tpl;
 
     // Date and Time
@@ -29,13 +29,20 @@ std::string substituteTitleVars(const std::string& tpl, const std::string& origi
     std::strftime(timeBuf, sizeof(timeBuf), "%H:%M:%S", &tm);
 
     // Replace variables
-    size_t pos;
-    while ((pos = result.find("{OriginalTitle}")) != std::string::npos)
-        result.replace(pos, 15, originalTitle);
-    while ((pos = result.find("{Date}")) != std::string::npos)
-        result.replace(pos, 6, dateBuf);
-    while ((pos = result.find("{Time}")) != std::string::npos)
-        result.replace(pos, 6, timeBuf);
+    auto replaceAll = [](std::string& str, const std::string& from, const std::string& to) {
+        size_t pos = 0;
+        while ((pos = str.find(from, pos)) != std::string::npos) {
+            str.replace(pos, from.length(), to);
+            pos += to.length();
+        }
+    };
+
+    replaceAll(result, "{OriginalTitle}", PWINDOW->m_title);
+    replaceAll(result, "{Class}", PWINDOW->m_szClass);
+    replaceAll(result, "{InitialTitle}", PWINDOW->m_szInitialTitle);
+    replaceAll(result, "{InitialClass}", PWINDOW->m_szInitialClass);
+    replaceAll(result, "{Date}", dateBuf);
+    replaceAll(result, "{Time}", timeBuf);
 
     return result;
 }
@@ -765,7 +772,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     int currentTextSize = m_bForcedBarTextSize.value_or(**((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_text_size")->getDataStaticPtr()));
     if (localTitleEnabled && (m_szLastTitle != PWINDOW->m_title || m_bWindowSizeChanged || m_pTextTex->m_texID == 0 || m_bTitleColorChanged || m_iLastTextSize != currentTextSize)) {
         if (m_bForcedBarCustomTitle.has_value()) {
-            m_szLastTitle = substituteTitleVars(m_bForcedBarCustomTitle.value(), PWINDOW->m_title);
+            m_szLastTitle = substituteTitleVars(m_bForcedBarCustomTitle.value(), PWINDOW);
         } else {
             m_szLastTitle = PWINDOW->m_title;
         }
