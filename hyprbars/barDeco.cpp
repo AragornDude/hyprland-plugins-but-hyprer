@@ -48,6 +48,7 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     replaceAll(result, "{InitialClass}", PWINDOW->m_initialClass);
     replaceAll(result, "{initialWorkspaceToken}", PWINDOW->m_initialWorkspaceToken);
     // Hyprctl Window Variables Untested (those returned by 'hyprctl clients')
+    replaceAll(result, "{initialWorkspaceToken}", PWINDOW->m_initialWorkspaceToken);
     replaceAll(result, "{isPseudotiled}", PWINDOW->m_isPseudotiled ? "true" : "false");
     replaceAll(result, "{firstMap}", PWINDOW->m_firstMap ? "true" : "false");
     replaceAll(result, "{isFloating}", PWINDOW->m_isFloating ? "true" : "false");
@@ -71,7 +72,6 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     replaceAll(result, "{groupSwallowed}", PWINDOW->m_groupSwallowed ? "true" : "false");
     replaceAll(result, "{stayFocused}", PWINDOW->m_stayFocused ? "true" : "false");
     replaceAll(result, "{tearingHint}", PWINDOW->m_tearingHint ? "true" : "false");
-    replaceAll(result, "{const}", PWINDOW->const ? "true" : "false");
     replaceAll(result, "{X11SurfaceScaledBy}", std::to_string(PWINDOW->m_X11SurfaceScaledBy));
 
 
