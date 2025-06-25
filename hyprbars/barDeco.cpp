@@ -635,7 +635,7 @@ void CHyprBar::renderBarButtons(const Vector2D& bufferSize, const float scale) {
         auto      color = button.bgcol;
 
         if (inactiveColor.a > 0.0f) {
-            color = m_bWindowHasFocus ? color inactiveColor;
+            color = m_bWindowHasFocus ? color : inactiveColor;
             if (button.userfg && button.iconTex->m_texID != 0)
                 button.iconTex->destroyTexture();
         }
