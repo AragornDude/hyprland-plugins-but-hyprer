@@ -19,6 +19,9 @@
 
 std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     std::string result = tpl;
+    for (const auto& [name, value] : g_titleVars) {
+        replaceAll(result, "{" + name + "}", value);
+    }
 
     // Date and Time
     std::time_t t = std::time(nullptr);

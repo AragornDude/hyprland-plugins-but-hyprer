@@ -13,6 +13,44 @@
 #include "barDeco.hpp"
 #include "globals.hpp"
 
+// Custom Title Variables
+#include <cstdio>
+#include <sstream>
+...
+Hyprlang::CParseResult onNewTitleVar(const char* K, const char* V) {
+    std::string v = V;
+    auto comma = v.find(',');
+    Hyprlang::CParseResult result;
+    if (comma == std::string::npos) {
+        result.setError("title-var must be in the form name,command");
+        return result;
+    }
+    std::string name = v.substr(0, comma);
+    std::string cmd = v.substr(comma + 1);
+    // trim spaces
+    name.erase(0, name.find_first_not_of(" \t"));
+    name.erase(name.find_last_not_of(" \t") + 1);
+    cmd.erase(0, cmd.find_first_not_of(" \t"));
+    cmd.erase(cmd.find_last_not_of(" \t") + 1);
+
+    // Run the command and capture output
+    std::string output;
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (pipe) {
+        char buffer[256];
+        while (fgets(buffer, sizeof(buffer), pipe)) {
+            output += buffer;
+        }
+        pclose(pipe);
+        // Remove trailing newline
+        if (!output.empty() && output.back() == '\n')
+            output.pop_back();
+    }
+    g_titleVars[name] = output;
+    return result;
+}
+
+
 // Do NOT change this function.
 APICALL EXPORT std::string PLUGIN_API_VERSION() {
     return HYPRLAND_API_VERSION;
@@ -144,6 +182,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:icon_on_hover", Hyprlang::INT{0});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:inactive_button_color", Hyprlang::INT{0}); // unset
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:on_double_click", Hyprlang::STRING{""});
+
+    HyprlandAPI::addConfigKeyword(PHANDLE, "title-var", onNewTitleVar, Hyprlang::SHandlerOptions{});
 
     HyprlandAPI::addConfigKeyword(PHANDLE, "hyprbars-button", onNewButton, Hyprlang::SHandlerOptions{});
     static auto P4 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "preConfigReload", [&](void* self, SCallbackInfo& info, std::any data) { onPreConfigReload(); });
