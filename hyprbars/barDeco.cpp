@@ -634,8 +634,8 @@ void CHyprBar::renderBarButtons(const Vector2D& bufferSize, const float scale) {
         const auto  pos = Vector2D{BUTTONSRIGHT ? bufferSize.x - offset - scaledButtonSize / 2.0 : offset + scaledButtonSize / 2.0, bufferSize.y / 2.0}.floor();
         auto      color = button.bgcol;
 
-        if (**inactiveColor > 0) {
-            color = m_bWindowHasFocus ? color : CHyprColor(**inactiveColor);
+        if (inactiveColor.a > 0.0f) {
+            color = m_bWindowHasFocus ? color inactiveColor;
             if (button.userfg && button.iconTex->m_texID != 0)
                 button.iconTex->destroyTexture();
         }
@@ -815,7 +815,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         inactiveColor = CHyprColor(**PINACTIVECOLOR);
     }
 
-    if (**inactiveColor > 0) {
+    if (inactiveColor.a > 0.0f) {
         bool currentWindowFocus = PWINDOW == g_pCompositor->m_lastWindow.lock();
         if (currentWindowFocus != m_bWindowHasFocus) {
             m_bWindowHasFocus = currentWindowFocus;
