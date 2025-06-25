@@ -2,7 +2,7 @@
 
 Adds simple title bars to windows.
 
-![preview](https://i.ibb.co/hLDRCpT/20231029-22h30m05s.png)
+![image](https://github.com/user-attachments/assets/184a66b9-eb91-4f6f-8953-b265a2735939)
 
 ## Config
 
@@ -28,38 +28,25 @@ windowrulev2 = plugin:hyprbars:bar_height 10, ^floating:0
 windowrulev2 = plugin:hyprbars:bar_blur 0, ^floating:0
 windowrulev2 = plugin:hyprbars:hyprbars-title Kitty -- {OriginalTitle} -- {Date}, class:^(kitty)$
 ```
-
-`enabled` -> (bool) whether to enable the bars
-
-`bar_color` -> (col) bar's background color
-
-`bar_height` -> (int) bar's height (default `15`)
-
-`bar_blur` -> (bool) whether to blur the bar. Also requires the global blur to be enabled.
-
-`col.text` -> (col) bar's title text color
-
-`bar_title_enabled` -> (bool) whether to render the title (default `true`)
-
-`bar_text_size` -> (int) bar's title text font size (default `10`)
-
-`bar_text_font` -> (str) bar's title text font (default `Sans`)
-
-`bar_text_align` -> (str) bar's title text alignment (default `center`, can also be `left`)
-
-`bar_buttons_alignment` -> (str) bar's buttons alignment (default: `right`, can also be `left`)
-
-`bar_part_of_window` -> (bool) whether the bar is a part of the main window (if it is, stuff like shadows render around it)
-
-`bar_precedence_over_border` -> (bool) whether the bar should have a higher priority than the border (border will be around the bar)
-
-`bar_padding` -> (int) left / right edge padding (default `7`)
-
-`bar_button_padding` -> (int) padding between the buttons (default `5`)
-
-`icon_on_hover` -> (bool) whether the icons show on mouse hovering over the buttons (default `false`)
-
-`on_double_click` -> (str) command to run on double click of the bar (not on a button)
+| property | type | description | default |
+| --- | --- | --- | --- |
+`enabled` | bool | whether to enable the bars |
+`bar_color` | col | bar's background color |
+`bar_height` | int | bar's height | `15` |
+`bar_blur` | bool | whether to blur the bar. Also requires the global blur to be enabled. |
+`col.text` | col | bar's title text color |
+`bar_title_enabled` | bool | whether to render the title | `true` |
+`bar_text_size` | int | bar's title text font size | `10` |
+`bar_text_font` | str | bar's title text font | `Sans` |
+`bar_text_align` | str | bar's title text alignment | `center`, can also be `left` |
+`bar_buttons_alignment` | str | bar's buttons alignment |: `right`, can also be `left` |
+`bar_part_of_window` | bool | whether the bar is a part of the main window (if it is, stuff like shadows render around it) |
+`bar_precedence_over_border` | bool | whether the bar should have a higher priority than the border (border will be around the bar) |
+`bar_padding` | int | left / right edge padding | `7` |
+`bar_button_padding` | int | padding between the buttons | `5` |
+`icon_on_hover` | bool | whether the icons show on mouse hovering over the buttons | `false` |
+`inactive_button_color` | col | buttons bg color when window isn't focused |
+`on_double_click` | str | command to run on double click of the bar (not on a button) |
 
 ## Buttons Config
 

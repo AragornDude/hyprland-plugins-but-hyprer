@@ -62,6 +62,7 @@ class CHyprBar : public IHyprWindowDecoration {
     bool                      m_bTitleColorChanged = false;
     bool                      m_bButtonHovered     = false;
     bool                      m_bLastEnabledState  = false;
+    bool                      m_bWindowHasFocus    = false;
 
     // Bar Window Rules
     std::optional<int> m_bForcedBarHeight;
