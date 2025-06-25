@@ -602,7 +602,13 @@ void CHyprBar::renderBarButtons(const Vector2D& bufferSize, const float scale) {
     static auto* const PBARBUTTONPADDING = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_button_padding")->getDataStaticPtr();
     static auto* const PBARPADDING       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_padding")->getDataStaticPtr();
     static auto* const PALIGNBUTTONS     = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_buttons_alignment")->getDataStaticPtr();
-    static auto* const PINACTIVECOLOR    = m_bForcedInactiveButtonColor.value_or((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:inactive_button_color")->getDataStaticPtr());
+    CHyprColor inactiveColor;
+    if (m_bForcedInactiveButtonColor.has_value()) {
+        inactiveColor = m_bForcedInactiveButtonColor.value();
+    } else {
+        auto* const PINACTIVECOLOR = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:inactive_button_color")->getDataStaticPtr();
+        inactiveColor = CHyprColor(**PINACTIVECOLOR);
+    }
 
     const std::string& buttonsAlign = m_bForcedBarButtonsAlignment.value_or(*PALIGNBUTTONS);
     const bool BUTTONSRIGHT = buttonsAlign != "left";
@@ -628,8 +634,8 @@ void CHyprBar::renderBarButtons(const Vector2D& bufferSize, const float scale) {
         const auto  pos = Vector2D{BUTTONSRIGHT ? bufferSize.x - offset - scaledButtonSize / 2.0 : offset + scaledButtonSize / 2.0, bufferSize.y / 2.0}.floor();
         auto      color = button.bgcol;
 
-        if (**PINACTIVECOLOR > 0) {
-            color = m_bWindowHasFocus ? color : CHyprColor(**PINACTIVECOLOR);
+        if (**inactiveColor > 0) {
+            color = m_bWindowHasFocus ? color : CHyprColor(**inactiveColor);
             if (button.userfg && button.iconTex->m_texID != 0)
                 button.iconTex->destroyTexture();
         }
@@ -801,9 +807,15 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     static auto* const PENABLEBLUR       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_blur")->getDataStaticPtr();
     const bool localBlur = m_bForcedBarBlur.has_value() ? (m_bForcedBarBlur.value() != 0) : (**PENABLEBLUR != 0);
     static auto* const PENABLEBLURGLOBAL = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "decoration:blur:enabled")->getDataStaticPtr();
-    static auto* const PINACTIVECOLOR    = m_bForcedInactiveButtonColor.value_or((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:inactive_button_color")->getDataStaticPtr());
+    CHyprColor inactiveColor;
+    if (m_bForcedInactiveButtonColor.has_value()) {
+        inactiveColor = m_bForcedInactiveButtonColor.value();
+    } else {
+        auto* const PINACTIVECOLOR = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:inactive_button_color")->getDataStaticPtr();
+        inactiveColor = CHyprColor(**PINACTIVECOLOR);
+    }
 
-    if (**PINACTIVECOLOR > 0) {
+    if (**inactiveColor > 0) {
         bool currentWindowFocus = PWINDOW == g_pCompositor->m_lastWindow.lock();
         if (currentWindowFocus != m_bWindowHasFocus) {
             m_bWindowHasFocus = currentWindowFocus;
