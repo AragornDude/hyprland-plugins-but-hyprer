@@ -106,13 +106,14 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     replaceAll(result, "{swallowed}", std::to_string((uintptr_t)PWINDOW->m_swallowed.get()));
     replaceAll(result, "{workspace}", PWINDOW->m_workspace ? PWINDOW->m_workspace->m_name : "none");
 
-    // Hyprctl Window Variables Untested (those returned by 'hyprctl clients')
     if (PWINDOW->m_pendingSizeAck.has_value()) {
         auto& val = PWINDOW->m_pendingSizeAck.value();
         replaceAll(result, "{pendingSizeAck}", std::to_string(val.first) + ":" + vecToStr(val.second));
     } else {
         replaceAll(result, "{pendingSizeAck}", "none");
     }
+
+    //Custom Variables Based On Hyprctl Window Variables
     replaceAll(result, "{windowDecorationsCount}", std::to_string(PWINDOW->m_windowDecorations.size()));
     replaceAll(result, "{matchedRulesCount}", std::to_string(PWINDOW->m_matchedRules.size()));
     replaceAll(result, "{fullscreenInternal}", std::to_string(PWINDOW->m_fullscreenState.internal));
@@ -121,6 +122,7 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     replaceAll(result, "{lastSurfaceMonitorID}", std::to_string(PWINDOW->m_lastSurfaceMonitorID));
     replaceAll(result, "{wantsInitialFullscreenMonitor}", std::to_string(PWINDOW->m_wantsInitialFullscreenMonitor));
 
+    // Hyprctl Window Variables Untested (those returned by 'hyprctl clients')
 
 
 

@@ -89,9 +89,11 @@ The only exception to this rule is the enabled boolean. This one was created as 
 
 ## Custom Titles
 
-I also added custom title window rules. These titles can be formatted with variables. In the current iteration there are three variables:
+I also added custom title window rules. These titles can be formatted with variables. There are many variables, here are some examples:
 
-`{OriginalTitle}` -> The original title that would show by default.
+`{Title}` -> The original title that would show by default.
+
+`{Position}` -> The current position of the window on the screen.
 
 `{Date}` -> The current date in %Y-%m-%d formatting.
 
@@ -101,7 +103,9 @@ An example of this as a window rule would be:
 
 `windowrulev2 = plugin:hyprbars:hyprbars-title Kitty -- {OriginalTitle} -- {Date}, class:^(kitty)$`
 
-I plan to add more variables, as well as ways to add your own. One known issue with this is that the title won't update unless the window focus is changed, so for something like the `{Time}` variable, it won't update automatically every second. So I plan to add a window rule to add a manual update interval.
+I plan to add more variables, as well as ways to add your own. Currently, I have added most of the variables that can be viewed when running `hyprctl clients`, as well as a few other window variables. They can all be seen in the substituteTitleVars function at the top of `barDeco.cpp`.
+
+One known issue with this is that the title won't always update unless the window is changed (for example, changing focus or moving it), so for something like the `{Time}` variable, it won't update automatically every second, so I plan to add a window rule to add a manual update interval.
 
 ## Button Window Rules
 
