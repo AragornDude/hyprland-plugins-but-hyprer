@@ -19,18 +19,6 @@
 
 std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     std::string result = tpl;
-    for (const auto& [name, value] : g_titleVars) {
-        replaceAll(result, "{" + name + "}", value);
-    }
-
-    // Date and Time
-    std::time_t t = std::time(nullptr);
-    std::tm tm;
-    localtime_r(&t, &tm);
-    char dateBuf[32], timeBuf[32];
-    std::strftime(dateBuf, sizeof(dateBuf), "%Y-%m-%d", &tm);
-    std::strftime(timeBuf, sizeof(timeBuf), "%H:%M:%S", &tm);
-
     // Replace variables
     auto replaceAll = [](std::string& str, const std::string& from, const std::string& to) {
         size_t pos = 0;
@@ -45,6 +33,19 @@ std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
     auto colorToStr = [](const CHyprColor& c) {
         return std::to_string(c.r) + "," + std::to_string(c.g) + "," + std::to_string(c.b) + "," + std::to_string(c.a);
     };
+    
+    for (const auto& [name, value] : g_titleVars) {
+        replaceAll(result, "{" + name + "}", value);
+    }
+
+    // Date and Time
+    std::time_t t = std::time(nullptr);
+    std::tm tm;
+    localtime_r(&t, &tm);
+    char dateBuf[32], timeBuf[32];
+    std::strftime(dateBuf, sizeof(dateBuf), "%Y-%m-%d", &tm);
+    std::strftime(timeBuf, sizeof(timeBuf), "%H:%M:%S", &tm);
+
 
     // Hyprctl Window Variables Working (those returned by 'hyprctl clients')
     // Strings

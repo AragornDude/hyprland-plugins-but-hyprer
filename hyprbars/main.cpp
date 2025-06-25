@@ -16,7 +16,7 @@
 // Custom Title Variables
 #include <cstdio>
 #include <sstream>
-...
+
 Hyprlang::CParseResult onNewTitleVar(const char* K, const char* V) {
     std::string v = V;
     auto comma = v.find(',');
