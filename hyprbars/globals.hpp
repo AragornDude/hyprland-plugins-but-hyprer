@@ -4,7 +4,6 @@
 #include <hyprland/src/render/Texture.hpp>
 
 #include <map>
-...
 inline std::map<std::string, std::string> g_titleVars;
 
 inline HANDLE PHANDLE = nullptr;
