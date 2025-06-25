@@ -299,7 +299,7 @@ void CHyprBar::handleDownEvent(SCallbackInfo& info, std::optional<ITouch::SDownE
 
     const std::string& buttonsAlign = m_bForcedBarButtonsAlignment.value_or(*PALIGNBUTTONS);
     const bool BUTTONSRIGHT    = buttonsAlign != "left";
-    const std::string  ON_DOUBLE_CLICK = *PONDOUBLECLICK;
+    const std::string  ON_DOUBLE_CLICK = m_bForcedOnDoubleClick.value_or(*PONDOUBLECLICK);
 
     if (!VECINRECT(COORDS, 0, 0, assignedBoxGlobal().w, m_bForcedBarHeight.value_or(**PHEIGHT) - 1)) {
 
@@ -602,7 +602,7 @@ void CHyprBar::renderBarButtons(const Vector2D& bufferSize, const float scale) {
     static auto* const PBARBUTTONPADDING = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_button_padding")->getDataStaticPtr();
     static auto* const PBARPADDING       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_padding")->getDataStaticPtr();
     static auto* const PALIGNBUTTONS     = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_buttons_alignment")->getDataStaticPtr();
-    static auto* const PINACTIVECOLOR    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:inactive_button_color")->getDataStaticPtr();
+    static auto* const PINACTIVECOLOR    = m_bForcedInactiveButtonColor.value_or((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:inactive_button_color")->getDataStaticPtr());
 
     const std::string& buttonsAlign = m_bForcedBarButtonsAlignment.value_or(*PALIGNBUTTONS);
     const bool BUTTONSRIGHT = buttonsAlign != "left";
@@ -801,7 +801,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     static auto* const PENABLEBLUR       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_blur")->getDataStaticPtr();
     const bool localBlur = m_bForcedBarBlur.has_value() ? (m_bForcedBarBlur.value() != 0) : (**PENABLEBLUR != 0);
     static auto* const PENABLEBLURGLOBAL = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "decoration:blur:enabled")->getDataStaticPtr();
-    static auto* const PINACTIVECOLOR    = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:inactive_button_color")->getDataStaticPtr();
+    static auto* const PINACTIVECOLOR    = m_bForcedInactiveButtonColor.value_or((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:inactive_button_color")->getDataStaticPtr());
 
     if (**PINACTIVECOLOR > 0) {
         bool currentWindowFocus = PWINDOW == g_pCompositor->m_lastWindow.lock();
@@ -977,20 +977,25 @@ void CHyprBar::updateRules() {
     auto       prevHidden           = m_hidden;
     auto       prevForcedTitleColor = m_bForcedTitleColor;
 
-    m_bForcedBarColor   = std::nullopt;
-    m_bForcedTitleColor = std::nullopt;
     m_bForcedBarHeight  = std::nullopt;
-    m_bForcedBarTextSize = std::nullopt;
     m_bForcedBarPadding = std::nullopt;
-    m_bForcedBarButtonPadding = std::nullopt;
+    m_bForcedBarColor   = std::nullopt;
     m_bForcedBarBlur = std::nullopt;
-    m_bForcedBarTitleEnabled = std::nullopt;
     m_bForcedBarPartOfWindow = std::nullopt;
     m_bForcedBarPrecedenceOverBorder = std::nullopt;
-    m_bForcedIconOnHover = std::nullopt;
+    m_bForcedOnDoubleClick = std::nullopt;
+
+    m_bForcedBarTitleEnabled = std::nullopt;
     m_bForcedBarTextFont = std::nullopt;
+    m_bForcedBarTextSize = std::nullopt;
     m_bForcedBarTextAlign = std::nullopt;
+    m_bForcedTitleColor = std::nullopt;
+    m_bForcedBarCustomTitle = std::nullopt;
+    
+    m_bForcedIconOnHover = std::nullopt;
     m_bForcedBarButtonsAlignment = std::nullopt;
+    m_bForcedBarButtonPadding = std::nullopt;
+    m_bForcedInactiveButtonColor = std::nullopt;
     m_hidden           = false;
 
     m_windowRuleButtons.clear();
@@ -1022,6 +1027,8 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
         m_bForcedBarPartOfWindow = configStringToInt(arg).value_or(0);
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_precedence_over_border"))
         m_bForcedBarPrecedenceOverBorder = configStringToInt(arg).value_or(0);
+    else if (r->m_rule.starts_with("plugin:hyprbars:on_double_click"))
+        m_bForcedOnDoubleClick = arg;
     // Title Window Rules
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_title_enabled"))
         m_bForcedBarTitleEnabled = configStringToInt(arg).value_or(0);
@@ -1042,6 +1049,8 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
         m_bForcedBarButtonsAlignment = arg;
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_button_padding"))
         m_bForcedBarButtonPadding = configStringToInt(arg).value_or(0);
+    else if (r->m_rule.starts_with("plugin:hyprbars:inactive_button_color"))
+        m_bForcedInactiveButtonColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-button")){
         auto params = splitByDelimiter(arg, ">|<");
         if (params.size() >= 4) {

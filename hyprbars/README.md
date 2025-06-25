@@ -39,7 +39,7 @@ windowrulev2 = plugin:hyprbars:hyprbars-title Kitty -- {OriginalTitle} -- {Date}
 `bar_text_size` | int | bar's title text font size | `10` |
 `bar_text_font` | str | bar's title text font | `Sans` |
 `bar_text_align` | str | bar's title text alignment | `center`, can also be `left` |
-`bar_buttons_alignment` | str | bar's buttons alignment |: `right`, can also be `left` |
+`bar_buttons_alignment` | str | bar's buttons alignment | `right`, can also be `left` |
 `bar_part_of_window` | bool | whether the bar is a part of the main window (if it is, stuff like shadows render around it) |
 `bar_precedence_over_border` | bool | whether the bar should have a higher priority than the border (border will be around the bar) |
 `bar_padding` | int | left / right edge padding | `7` |
@@ -88,7 +88,7 @@ I also added custom title window rules. These titles can be formatted with varia
 
 An example of this as a window rule would be:
 
-`windowrulev2 = plugin:hyprbars:hyprbars-title Kitty -- {OriginalTitle} -- {Date}, class:^(kitty)$`
+`windowrulev2 = plugin:hyprbars:hyprbars-title Kitty -- {Title} -- {Date}, class:^(kitty)$`
 
 I plan to add more variables, as well as ways to add your own. Currently, I have added most of the variables that can be viewed when running `hyprctl clients`, as well as a few other window variables. They can all be seen in the substituteTitleVars function at the top of `barDeco.cpp`.
 

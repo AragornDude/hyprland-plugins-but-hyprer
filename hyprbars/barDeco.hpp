@@ -71,6 +71,7 @@ class CHyprBar : public IHyprWindowDecoration {
     std::optional<int> m_bForcedBarBlur;
     std::optional<int> m_bForcedBarPartOfWindow;
     std::optional<int> m_bForcedBarPrecedenceOverBorder;
+    std::optional<std::string> m_bForcedOnDoubleClick;
     // Title Window Rules
     std::optional<int>m_bForcedBarTitleEnabled;
     std::optional<std::string> m_bForcedBarTextFont;
@@ -82,6 +83,7 @@ class CHyprBar : public IHyprWindowDecoration {
     std::optional<int> m_bForcedIconOnHover;
     std::optional<std::string> m_bForcedBarButtonsAlignment;
     std::optional<int> m_bForcedBarButtonPadding;
+    std::optional<CHyprColor> m_bForcedInactiveButtonColor;
     struct WindowRuleButton {
       CHyprColor bgcol;
       int size;
