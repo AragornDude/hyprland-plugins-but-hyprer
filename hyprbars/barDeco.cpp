@@ -225,8 +225,8 @@ bool CHyprBar::inputIsValid() {
         return false;
 
     // check if input is on top or overlay shell layers
-    auto PMONITOR                  = g_pCompositor->m_lastMonitor.lock();
-    PHLLS foundSurface             = nullptr;
+    auto     PMONITOR     = g_pCompositor->m_lastMonitor.lock();
+    PHLLS    foundSurface = nullptr;
     Vector2D surfaceCoords;
 
     // check top layer
@@ -235,7 +235,8 @@ bool CHyprBar::inputIsValid() {
     if (foundSurface)
         return false;
     // check overlay layer
-    g_pCompositor->vectorToLayerSurface(g_pInputManager->getMouseCoordsInternal(), &PMONITOR->m_layerSurfaceLayers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], &surfaceCoords, &foundSurface);
+    g_pCompositor->vectorToLayerSurface(g_pInputManager->getMouseCoordsInternal(), &PMONITOR->m_layerSurfaceLayers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], &surfaceCoords,
+                                        &foundSurface);
 
     if (foundSurface)
         return false;
@@ -635,8 +636,8 @@ void CHyprBar::renderBarButtons(const Vector2D& bufferSize, const float scale) {
             const auto  scaledButtonSize = button.size * scale;
             const auto  scaledButtonsPad = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) * scale;
 
-        const auto  pos = Vector2D{BUTTONSRIGHT ? bufferSize.x - offset - scaledButtonSize / 2.0 : offset + scaledButtonSize / 2.0, bufferSize.y / 2.0}.floor();
-        auto      color = button.bgcol;
+        const auto  pos   = Vector2D{BUTTONSRIGHT ? bufferSize.x - offset - scaledButtonSize / 2.0 : offset + scaledButtonSize / 2.0, bufferSize.y / 2.0}.floor();
+        auto        color = button.bgcol;
 
         if (inactiveColor.a > 0.0f) {
             color = m_bWindowHasFocus ? color : inactiveColor;
@@ -765,7 +766,7 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
                         scaledButtonSize};
 
             if (!localIconOnHover || (localIconOnHover && m_iButtonHoverState > 0))
-                g_pHyprOpenGL->renderTexture(button.iconTex, pos, a);
+                g_pHyprOpenGL->renderTexture(button.iconTex, pos, {.a = a});
             offset += scaledButtonsPad + scaledButtonSize;
 
             bool currentBit = (m_iButtonHoverState & (1 << i)) != 0;
@@ -827,11 +828,11 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         bool currentWindowFocus = PWINDOW == g_pCompositor->m_lastWindow.lock();
         if (currentWindowFocus != m_bWindowHasFocus) {
             m_bWindowHasFocus = currentWindowFocus;
-            m_bButtonsDirty = true;
+            m_bButtonsDirty   = true;
         }
     }
 
-    const CHyprColor   DEST_COLOR = m_bForcedBarColor.value_or(**PCOLOR);
+    const CHyprColor DEST_COLOR = m_bForcedBarColor.value_or(**PCOLOR);
     if (DEST_COLOR != m_cRealBarColor->goal())
         *m_cRealBarColor = DEST_COLOR;
 
@@ -882,7 +883,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         glClearStencil(0);
         glClear(GL_STENCIL_BUFFER_BIT);
 
-        glEnable(GL_STENCIL_TEST);
+        g_pHyprOpenGL->setCapStatus(GL_STENCIL_TEST, true);
 
         glStencilFunc(GL_ALWAYS, 1, -1);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -890,7 +891,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
         windowBox.translate(WORKSPACEOFFSET).scale(pMonitor->m_scale).round();
-        g_pHyprOpenGL->renderRect(windowBox, CHyprColor(0, 0, 0, 0), scaledRounding, m_pWindow->roundingPower());
+        g_pHyprOpenGL->renderRect(windowBox, CHyprColor(0, 0, 0, 0), {.round = scaledRounding, .roundingPower = m_pWindow->roundingPower()});
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
         glStencilFunc(GL_NOTEQUAL, 1, -1);
@@ -898,9 +899,9 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     }
 
     if (SHOULDBLUR)
-        g_pHyprOpenGL->renderRectWithBlur(titleBarBox, color, scaledRounding, m_pWindow->roundingPower(), a);
+        g_pHyprOpenGL->renderRect(titleBarBox, color, {.round = scaledRounding, .roundingPower = m_pWindow->roundingPower(), .blur = true, .blurA = a});
     else
-        g_pHyprOpenGL->renderRect(titleBarBox, color, scaledRounding, m_pWindow->roundingPower());
+        g_pHyprOpenGL->renderRect(titleBarBox, color, {.round = scaledRounding, .roundingPower = m_pWindow->roundingPower()});
 
     // render title
     int currentTextSize = m_bForcedBarTextSize.value_or(**((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_text_size")->getDataStaticPtr()));
@@ -918,21 +919,21 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         // cleanup stencil
         glClearStencil(0);
         glClear(GL_STENCIL_BUFFER_BIT);
-        glDisable(GL_STENCIL_TEST);
+        g_pHyprOpenGL->setCapStatus(GL_STENCIL_TEST, false);
         glStencilMask(-1);
         glStencilFunc(GL_ALWAYS, 1, 0xFF);
     }
 
     CBox textBox = {titleBarBox.x, titleBarBox.y, (int)BARBUF.x, (int)BARBUF.y};
     if (localTitleEnabled)
-        g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, a);
+        g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, {.a = a});
 
     if (m_bButtonsDirty || m_bWindowSizeChanged) {
         renderBarButtons(BARBUF, pMonitor->m_scale);
         m_bButtonsDirty = false;
     }
 
-    g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, a);
+    g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, {.a = a});
 
     g_pHyprOpenGL->scissor(nullptr);
 
