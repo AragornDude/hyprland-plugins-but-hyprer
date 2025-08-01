@@ -766,7 +766,7 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
                         scaledButtonSize};
 
             if (!localIconOnHover || (localIconOnHover && m_iButtonHoverState > 0))
-                g_pHyprOpenGL->renderTexture(button.iconTex, pos, {.a = a});
+                g_pHyprOpenGL->renderTexture(button.iconTex, pos, a);
             offset += scaledButtonsPad + scaledButtonSize;
 
             bool currentBit = (m_iButtonHoverState & (1 << i)) != 0;
@@ -891,7 +891,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
         windowBox.translate(WORKSPACEOFFSET).scale(pMonitor->m_scale).round();
-        g_pHyprOpenGL->renderRect(windowBox, CHyprColor(0, 0, 0, 0), {.round = scaledRounding, .roundingPower = m_pWindow->roundingPower()});
+        g_pHyprOpenGL->renderRect(windowBox, CHyprColor(0, 0, 0, 0), scaledRounding, m_pWindow->roundingPower());
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
         glStencilFunc(GL_NOTEQUAL, 1, -1);
@@ -899,7 +899,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     }
 
     if (SHOULDBLUR)
-        g_pHyprOpenGL->renderRect(titleBarBox, color, {.round = scaledRounding, .roundingPower = m_pWindow->roundingPower(), .blur = true, .blurA = a});
+        g_pHyprOpenGL->renderRect(titleBarBox, color, scaledRounding, m_pWindow->roundingPower());
     else
         g_pHyprOpenGL->renderRect(titleBarBox, color, {.round = scaledRounding, .roundingPower = m_pWindow->roundingPower()});
 
@@ -926,14 +926,14 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
 
     CBox textBox = {titleBarBox.x, titleBarBox.y, (int)BARBUF.x, (int)BARBUF.y};
     if (localTitleEnabled)
-        g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, {.a = a});
+        g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, a);
 
     if (m_bButtonsDirty || m_bWindowSizeChanged) {
         renderBarButtons(BARBUF, pMonitor->m_scale);
         m_bButtonsDirty = false;
     }
 
-    g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, {.a = a});
+    g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, a);
 
     g_pHyprOpenGL->scissor(nullptr);
 
