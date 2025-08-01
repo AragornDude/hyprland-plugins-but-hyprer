@@ -882,9 +882,10 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
 
         glClearStencil(0);
         glClear(GL_STENCIL_BUFFER_BIT);
-
+#ifdef HYPRLAND_049
+#else
         g_pHyprOpenGL->setCapStatus(GL_STENCIL_TEST, true);
-
+#endif
         glStencilFunc(GL_ALWAYS, 1, -1);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
@@ -919,7 +920,10 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         // cleanup stencil
         glClearStencil(0);
         glClear(GL_STENCIL_BUFFER_BIT);
+#ifdef HYPRLAND_049
+#else
         g_pHyprOpenGL->setCapStatus(GL_STENCIL_TEST, false);
+#endif
         glStencilMask(-1);
         glStencilFunc(GL_ALWAYS, 1, 0xFF);
     }
