@@ -901,7 +901,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     if (SHOULDBLUR)
         g_pHyprOpenGL->renderRect(titleBarBox, color, scaledRounding, m_pWindow->roundingPower());
     else
-        g_pHyprOpenGL->renderRect(titleBarBox, color, {.round = scaledRounding, .roundingPower = m_pWindow->roundingPower()});
+        g_pHyprOpenGL->renderRect(titleBarBox, color, scaledRounding, m_pWindow->roundingPower());
 
     // render title
     int currentTextSize = m_bForcedBarTextSize.value_or(**((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_text_size")->getDataStaticPtr()));
