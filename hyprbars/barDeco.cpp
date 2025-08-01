@@ -795,7 +795,11 @@ void CHyprBar::draw(PHLMONITOR pMonitor, const float& a) {
         return;
 
     auto data = CBarPassElement::SBarData{this, a};
+#ifdef HYPRLAND_049
+    g_pHyprRenderer->m_renderPass.add(makeShared<CBarPassElement>(data));
+#else
     g_pHyprRenderer->m_renderPass.add(makeUnique<CBarPassElement>(data));
+#endif
 }
 
 void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {

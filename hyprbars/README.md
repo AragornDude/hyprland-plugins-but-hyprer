@@ -98,5 +98,5 @@ One known issue with this is that the title won't always update unless the windo
 
 Defining Buttons in the original plugin involved passing multiple arguments, which makes things a little more difficult for window rules that only allow one argument to be passed before the window rule is applied. For this reason I had to pass all the arguments as one string, using a different delimeter than the comma. For this I used ">|<" as shown below.
 
-`windowrulev2 = plugin:hyprbars:bar_button rgba(ff0000ff)>|<10>|<X>|<hyprctl dispatch killactive>|<rgba(0000ffff), ^floating:0` -> Creates a button on only non-floating windows.
+`windowrulev2 = plugin:hyprbars:hyprbars_button rgba(ff0000ff)>|<10>|<X>|<hyprctl dispatch killactive>|<rgba(0000ffff), ^floating:0` -> Creates a button on only non-floating windows.
 Any window that this matches will clear any buttons created the original way and only use the ones that use the window rule. For this reason, if you want a truly universal button (for example, a close button) you'll want to use `class:.*` or some other window rule that matches all windows.
