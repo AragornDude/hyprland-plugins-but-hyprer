@@ -8,7 +8,9 @@
 #include <hyprland/src/render/Renderer.hpp>
 #include <hyprland/src/managers/LayoutManager.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
+#ifdef HYPRLAND_049
 #include <hyprland/src/managers/animation/AnimationManager.hpp>
+#endif
 #include <hyprland/src/protocols/LayerShell.hpp>
 #include <pango/pangocairo.h>
 
