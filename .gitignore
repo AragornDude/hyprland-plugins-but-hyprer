@@ -38,6 +38,8 @@
 result
 result-man
 
+*.code-workspace
+
 borders-plus-plus/
 csgo-vulkan-fix/
 hyprexpo/
@@ -46,3 +48,4 @@ hyprscrolling/
 hyprtrails/
 hyprwinwrap/
 hyprbars-og/
+hyprland-plugins-but-hyprer.code-workspace
