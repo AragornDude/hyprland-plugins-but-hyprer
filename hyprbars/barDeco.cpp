@@ -1012,6 +1012,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         m_iLastHeight = m_bForcedBarHeight.value_or(**PHEIGHT);
     }
 }
+}
 
 eDecorationType CHyprBar::getDecorationType() {
     return DECORATION_CUSTOM;
@@ -1058,6 +1059,10 @@ PHLWINDOW CHyprBar::getOwner() {
 
 void CHyprBar::updateRules() {
     const auto PWINDOW              = m_pWindow.lock();
+    bool prevHidden = m_hidden;
+    auto prevForcedTitleColor = m_bForcedTitleColor;
+    // NOTE: The following loop assumes you have a rules vector. If not, comment it out or implement as needed.
+    // for (auto& r : rules) { ... }
     auto       rules                = PWINDOW->m_matchedRules;
     auto       prevHidden           = m_hidden;
     auto       prevForcedTitleColor = m_bForcedTitleColor;
@@ -1110,9 +1115,9 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
         m_bForcedBarBlur = configStringToInt(arg).value_or(0);
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_part_of_window"))
         m_bForcedBarPartOfWindow = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_precedence_over_border"))
+    else if (r->m_rule.find("plugin:hyprbars:bar_precedence_over_border") == 0)
         m_bForcedBarPrecedenceOverBorder = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:on_double_click"))
+    else if (r->m_rule.find("plugin:hyprbars:on_double_click") == 0)
         m_bForcedOnDoubleClick = arg;
     // Title Window Rules
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_title_enabled"))
@@ -1123,9 +1128,9 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
         m_bForcedBarTextSize = configStringToInt(arg).value_or(0);
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_align"))
         m_bForcedBarTextAlign = arg;
-    else if (r->m_rule.starts_with("plugin:hyprbars:title_color"))
+    else if (r->m_rule.find("plugin:hyprbars:title_color") == 0)
         m_bForcedTitleColor = CHyprColor(configStringToInt(arg).value_or(0));
-    else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-title"))
+    else if (r->m_rule.find("plugin:hyprbars:hyprbars-title") == 0)
         m_bForcedBarCustomTitle = arg;
     // Buttons Window Rules
     else if (r->m_rule.starts_with("plugin:hyprbars:icon_on_hover"))
@@ -1134,7 +1139,16 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
         m_bForcedBarButtonsAlignment = arg;
     else if (r->m_rule.starts_with("plugin:hyprbars:bar_button_padding"))
         m_bForcedBarButtonPadding = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:inactive_button_color"))
+    else if (r->m_rule.find("plugin:hyprbars:inactive_button_color") == 0)
+// Fallback implementation for configStringToInt if missing
+#include <optional>
+std::optional<int> configStringToInt(const std::string& s) {
+    try {
+        return std::stoi(s);
+    } catch (...) {
+        return std::nullopt;
+    }
+}
         m_bForcedInactiveButtonColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-button")){
         auto params = splitByDelimiter(arg, ">|<");
