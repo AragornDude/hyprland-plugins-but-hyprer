@@ -20,76 +20,9 @@
 std::optional<int> configStringToInt(const std::string& s) {
     try {
         return std::stoi(s);
-    // The following code handles the parsing of rules for the bar decoration
-    replaceAll(result, "{noInitialFocus}", PWINDOW->m_noInitialFocus ? "true" : "false");
-    replaceAll(result, "{wantsInitialFullscreen}", PWINDOW->m_wantsInitialFullscreen ? "true" : "false");
-    replaceAll(result, "{fadingOut}", PWINDOW->m_fadingOut ? "true" : "false");
-    replaceAll(result, "{readyToDelete}", PWINDOW->m_readyToDelete ? "true" : "false");
-    replaceAll(result, "{animatingIn}", PWINDOW->m_animatingIn ? "true" : "false");
-    replaceAll(result, "{pinned}", PWINDOW->m_pinned ? "true" : "false");
-    replaceAll(result, "{pinFullscreened}", PWINDOW->m_pinFullscreened ? "true" : "false");
-    replaceAll(result, "{isUrgent}", PWINDOW->m_isUrgent ? "true" : "false");
-    replaceAll(result, "{monitorMovedFrom}", std::to_string(PWINDOW->m_monitorMovedFrom));
-    replaceAll(result, "{currentlySwallowed}", PWINDOW->m_currentlySwallowed ? "true" : "false");
-    replaceAll(result, "{groupSwallowed}", PWINDOW->m_groupSwallowed ? "true" : "false");
-    replaceAll(result, "{stayFocused}", PWINDOW->m_stayFocused ? "true" : "false");
-    replaceAll(result, "{tearingHint}", PWINDOW->m_tearingHint ? "true" : "false");
-    replaceAll(result, "{X11SurfaceScaledBy}", std::to_string(PWINDOW->m_X11SurfaceScaledBy));
-    // Vector2D
-    replaceAll(result, "{floatingOffset}", vecToStr(PWINDOW->m_floatingOffset));
-    replaceAll(result, "{lastFloatingPosition}", vecToStr(PWINDOW->m_lastFloatingPosition));
-    replaceAll(result, "{lastFloatingSize}", vecToStr(PWINDOW->m_lastFloatingSize));
-    replaceAll(result, "{originalClosedPos}", vecToStr(PWINDOW->m_originalClosedPos));
-    replaceAll(result, "{originalClosedSize}", vecToStr(PWINDOW->m_originalClosedSize));
-    replaceAll(result, "{pendingReportedSize}", vecToStr(PWINDOW->m_pendingReportedSize));
-    replaceAll(result, "{position}", vecToStr(PWINDOW->m_position));
-    replaceAll(result, "{pseudoSize}", vecToStr(PWINDOW->m_pseudoSize));
-    replaceAll(result, "{relativeCursorCoordsOnLastWarp}", vecToStr(PWINDOW->m_relativeCursorCoordsOnLastWarp));
-    replaceAll(result, "{reportedPosition}", vecToStr(PWINDOW->m_reportedPosition));
-    replaceAll(result, "{reportedSize}", vecToStr(PWINDOW->m_reportedSize));
-    replaceAll(result, "{size}", vecToStr(PWINDOW->m_size));
-    // PHL Variables
-    replaceAll(result, "{activeInactiveAlpha}", std::to_string(PWINDOW->m_activeInactiveAlpha->value()));
-    replaceAll(result, "{alpha}", std::to_string(PWINDOW->m_alpha->value()));
-    replaceAll(result, "{borderAngleAnimationProgress}", std::to_string(PWINDOW->m_borderAngleAnimationProgress->value()));
-    replaceAll(result, "{borderFadeAnimationProgress}", std::to_string(PWINDOW->m_borderFadeAnimationProgress->value()));
-    replaceAll(result, "{dimPercent}", std::to_string(PWINDOW->m_dimPercent->value()));
-    replaceAll(result, "{movingFromWorkspaceAlpha}", std::to_string(PWINDOW->m_movingFromWorkspaceAlpha->value()));
-    replaceAll(result, "{movingToWorkspaceAlpha}", std::to_string(PWINDOW->m_movingToWorkspaceAlpha->value()));
-    replaceAll(result, "{notRespondingTint}", std::to_string(PWINDOW->m_notRespondingTint->value()));
-    replaceAll(result, "{realPosition}", vecToStr(PWINDOW->m_realPosition->value()));
-    replaceAll(result, "{realSize}", vecToStr(PWINDOW->m_realSize->value()));
-    replaceAll(result, "{realShadowColor}", colorToStr(PWINDOW->m_realShadowColor->value()));
-    replaceAll(result, "{monitor}", std::to_string((uintptr_t)PWINDOW->m_monitor.get()));
-    replaceAll(result, "{lastCycledWindow}", std::to_string((uintptr_t)PWINDOW->m_lastCycledWindow.get()));
-    replaceAll(result, "{self}", std::to_string((uintptr_t)PWINDOW->m_self.get()));
-    replaceAll(result, "{swallowed}", std::to_string((uintptr_t)PWINDOW->m_swallowed.get()));
-    replaceAll(result, "{workspace}", PWINDOW->m_workspace ? PWINDOW->m_workspace->m_name : "none");
-
-    if (PWINDOW->m_pendingSizeAck.has_value()) {
-        auto& val = PWINDOW->m_pendingSizeAck.value();
-        replaceAll(result, "{pendingSizeAck}", std::to_string(val.first) + ":" + vecToStr(val.second));
-    } else {
-        replaceAll(result, "{pendingSizeAck}", "none");
+    } catch (...) {
+        return std::nullopt;
     }
-
-    //Custom Variables Based On Hyprctl Window Variables
-    replaceAll(result, "{windowDecorationsCount}", std::to_string(PWINDOW->m_windowDecorations.size()));
-    replaceAll(result, "{matchedRulesCount}", std::to_string(PWINDOW->m_matchedRules.size()));
-    replaceAll(result, "{fullscreenInternal}", std::to_string(PWINDOW->m_fullscreenState.internal));
-    replaceAll(result, "{fullscreenClient}", std::to_string(PWINDOW->m_fullscreenState.client));
-    replaceAll(result, "{idleInhibitMode}", std::to_string(PWINDOW->m_idleInhibitMode));
-    replaceAll(result, "{lastSurfaceMonitorID}", std::to_string(PWINDOW->m_lastSurfaceMonitorID));
-    replaceAll(result, "{wantsInitialFullscreenMonitor}", std::to_string(PWINDOW->m_wantsInitialFullscreenMonitor));
-
-    // Hyprctl Window Variables Untested (those returned by 'hyprctl clients')
-
-
-
-    replaceAll(result, "{Date}", dateBuf);
-    replaceAll(result, "{Time}", timeBuf);
-
-    return result;
 }
 std::vector<std::string> splitByDelimiter(const std::string& str, const std::string& delim) {
     std::vector<std::string> out;
