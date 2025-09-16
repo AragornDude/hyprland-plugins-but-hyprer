@@ -732,9 +732,9 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
 #ifdef HYPRLAND_049
                 g_pHyprOpenGL->renderTexture(button.iconTex, pos, a);
 #else
-                CHyprOpenGLImpl::STextureRenderData data;
-                data.alpha = a;
-                g_pHyprOpenGL->renderTexture(button.iconTex, pos, data);
+                CHyprOpenGLImpl::STextureRenderData texData = {};
+                texData.alpha = a;
+                g_pHyprOpenGL->renderTexture(button.iconTex, pos, texData);
 #endif
             }
             offset += scaledButtonsPad + scaledButtonSize;
@@ -776,9 +776,9 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
 #ifdef HYPRLAND_049
                 g_pHyprOpenGL->renderTexture(button.iconTex, pos, a);
 #else
-                CHyprOpenGLImpl::STextureRenderData data;
-                data.alpha = a;
-                g_pHyprOpenGL->renderTexture(button.iconTex, pos, data);
+                CHyprOpenGLImpl::STextureRenderData texData = {};
+                texData.alpha = a;
+                g_pHyprOpenGL->renderTexture(button.iconTex, pos, texData);
 #endif
             }
             offset += scaledButtonsPad + scaledButtonSize;
@@ -841,6 +841,50 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     if (inactiveColor.a > 0.0f) {
         bool currentWindowFocus = PWINDOW == g_pCompositor->m_lastWindow.lock();
         if (currentWindowFocus != m_bWindowHasFocus) {
+            // Declare all needed variables at the top of the function
+            const auto         PWINDOW = m_pWindow.lock();
+            static auto* const PCOLOR            = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_color")->getDataStaticPtr();
+            static auto* const PHEIGHT           = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_height")->getDataStaticPtr();
+            static auto* const PPRECEDENCE       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_precedence_over_border")->getDataStaticPtr();
+            const bool localPrecedence = m_bForcedBarPrecedenceOverBorder.has_value() ? (m_bForcedBarPrecedenceOverBorder.value() != 0) : (**PPRECEDENCE != 0);
+            static auto* const PALIGNBUTTONS     = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_buttons_alignment")->getDataStaticPtr();
+            static auto* const PENABLETITLE      = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_title_enabled")->getDataStaticPtr();
+            const bool localTitleEnabled = m_bForcedBarTitleEnabled.has_value() ? (m_bForcedBarTitleEnabled.value() != 0) : (**PENABLETITLE != 0);
+            static auto* const PENABLEBLUR       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_blur")->getDataStaticPtr();
+            const bool localBlur = m_bForcedBarBlur.has_value() ? (m_bForcedBarBlur.value() != 0) : (**PENABLEBLUR != 0);
+            static auto* const PENABLEBLURGLOBAL = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "decoration:blur:enabled")->getDataStaticPtr();
+            CHyprColor inactiveColor;
+            if (m_bForcedInactiveButtonColor.has_value()) {
+                inactiveColor = m_bForcedInactiveButtonColor.value();
+            } else {
+                auto* const PINACTIVECOLOR = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:inactive_button_color")->getDataStaticPtr();
+                inactiveColor = CHyprColor(**PINACTIVECOLOR);
+            }
+            const CHyprColor DEST_COLOR = m_bForcedBarColor.value_or(**PCOLOR);
+            if (DEST_COLOR != m_cRealBarColor->goal())
+                *m_cRealBarColor = DEST_COLOR;
+            CHyprColor color = m_cRealBarColor->value();
+            color.a *= a;
+            const std::string& buttonsAlign = m_bForcedBarButtonsAlignment.value_or(*PALIGNBUTTONS);
+            const bool BUTTONSRIGHT = buttonsAlign != "left";
+            const bool SHOULDBLUR   = localBlur && **PENABLEBLURGLOBAL && color.a < 1.F;
+            if (m_bForcedBarHeight.value_or(**PHEIGHT) < 1) {
+                m_iLastHeight = m_bForcedBarHeight.value_or(**PHEIGHT);
+                return;
+            }
+            const auto PWORKSPACE      = PWINDOW->m_workspace;
+            const auto WORKSPACEOFFSET = PWORKSPACE && !PWINDOW->m_pinned ? PWORKSPACE->m_renderOffset->value() : Vector2D();
+            const auto ROUNDING = PWINDOW->rounding() + (localPrecedence ? 0 : PWINDOW->getRealBorderSize());
+            const auto scaledRounding = ROUNDING > 0 ? ROUNDING * pMonitor->m_scale - 2 : 0;
+            m_seExtents = {{0, m_bForcedBarHeight.value_or(**PHEIGHT)}, {}};
+            const auto DECOBOX = assignedBoxGlobal();
+            const auto BARBUF = DECOBOX.size() * pMonitor->m_scale;
+            CBox       titleBarBox = {DECOBOX.x - pMonitor->m_position.x, DECOBOX.y - pMonitor->m_position.y, DECOBOX.w,
+                                      DECOBOX.h + ROUNDING * 3};
+            titleBarBox.translate(PWINDOW->m_floatingOffset).scale(pMonitor->m_scale).round();
+            if (titleBarBox.w < 1 || titleBarBox.h < 1)
+                return;
+            g_pHyprOpenGL->scissor(titleBarBox);
             if (ROUNDING) {
                 // the +1 is a shit garbage temp fix until renderRect supports an alpha matte
                 CBox windowBox = {PWINDOW->m_realPosition->value().x + PWINDOW->m_floatingOffset.x - pMonitor->m_position.x + 1,
@@ -861,14 +905,14 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
 
                 glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-                windowBox.translate(WORKSPACEOFFSET).scale(pMonitor->m_scale).round();
+            windowBox.translate(WORKSPACEOFFSET).scale(pMonitor->m_scale).round();
         #ifdef HYPRLAND_049
-                g_pHyprOpenGL->renderRect(windowBox, CHyprColor(0, 0, 0, 0), scaledRounding, m_pWindow->roundingPower());
+            g_pHyprOpenGL->renderRect(windowBox, CHyprColor(0, 0, 0, 0), scaledRounding, m_pWindow->roundingPower());
         #else
-                CHyprOpenGLImpl::SRectRenderData data;
-                data.round = scaledRounding;
-                data.roundingPower = m_pWindow->roundingPower();
-                g_pHyprOpenGL->renderRect(windowBox, CHyprColor(0, 0, 0, 0), data);
+            CHyprOpenGLImpl::SRectRenderData rectData = {};
+            rectData.round = scaledRounding;
+            rectData.roundingPower = m_pWindow->roundingPower();
+            g_pHyprOpenGL->renderRect(windowBox, CHyprColor(0, 0, 0, 0), rectData);
         #endif
                 glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
@@ -880,19 +924,19 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         #ifdef HYPRLAND_049
                 g_pHyprOpenGL->renderRect(titleBarBox, color, scaledRounding, m_pWindow->roundingPower());
         #else
-                CHyprOpenGLImpl::SRectRenderData data;
-                data.round = scaledRounding;
-                data.roundingPower = m_pWindow->roundingPower();
-                g_pHyprOpenGL->renderRect(titleBarBox, color, data);
+            CHyprOpenGLImpl::SRectRenderData rectData = {};
+            rectData.round = scaledRounding;
+            rectData.roundingPower = m_pWindow->roundingPower();
+            g_pHyprOpenGL->renderRect(titleBarBox, color, rectData);
         #endif
             }
         #ifdef HYPRLAND_049
             g_pHyprOpenGL->renderRect(titleBarBox, color, scaledRounding, m_pWindow->roundingPower());
         #else
-            CHyprOpenGLImpl::SRectRenderData data;
-            data.round = scaledRounding;
-            data.roundingPower = m_pWindow->roundingPower();
-            g_pHyprOpenGL->renderRect(titleBarBox, color, data);
+            CHyprOpenGLImpl::SRectRenderData rectData = {};
+            rectData.round = scaledRounding;
+            rectData.roundingPower = m_pWindow->roundingPower();
+            g_pHyprOpenGL->renderRect(titleBarBox, color, rectData);
         #endif
 
             // render title
@@ -924,9 +968,9 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         #ifdef HYPRLAND_049
                 g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, a);
         #else
-                CHyprOpenGLImpl::STextureRenderData data;
-                data.alpha = a;
-                g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, data);
+            CHyprOpenGLImpl::STextureRenderData texData = {};
+            texData.alpha = a;
+            g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, texData);
         #endif
             }
 
@@ -938,9 +982,9 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         #ifdef HYPRLAND_049
             g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, a);
         #else
-            CHyprOpenGLImpl::STextureRenderData data;
-            data.alpha = a;
-            g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, data);
+            CHyprOpenGLImpl::STextureRenderData btnData = {};
+            btnData.alpha = a;
+            g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, btnData);
         #endif
             g_pHyprOpenGL->scissor(nullptr);
 
