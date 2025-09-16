@@ -733,7 +733,7 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
                 g_pHyprOpenGL->renderTexture(button.iconTex, pos, a);
 #else
                 CHyprOpenGLImpl::STextureRenderData texData = {};
-                texData.alpha = a;
+                texData.a = a;
                 g_pHyprOpenGL->renderTexture(button.iconTex, pos, texData);
 #endif
             }
@@ -777,7 +777,7 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
                 g_pHyprOpenGL->renderTexture(button.iconTex, pos, a);
 #else
                 CHyprOpenGLImpl::STextureRenderData texData = {};
-                texData.alpha = a;
+                texData.a = a;
                 g_pHyprOpenGL->renderTexture(button.iconTex, pos, texData);
 #endif
             }
@@ -969,7 +969,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
                 g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, a);
         #else
             CHyprOpenGLImpl::STextureRenderData texData = {};
-            texData.alpha = a;
+            texData.a = a;
             g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, texData);
         #endif
             }
@@ -983,7 +983,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
             g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, a);
         #else
             CHyprOpenGLImpl::STextureRenderData btnData = {};
-            btnData.alpha = a;
+            btnData.a = a;
             g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, btnData);
         #endif
             g_pHyprOpenGL->scissor(nullptr);
