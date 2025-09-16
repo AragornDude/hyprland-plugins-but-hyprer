@@ -12,11 +12,31 @@
 #include <hyprland/src/managers/animation/AnimationManager.hpp>
 #include <hyprland/src/protocols/LayerShell.hpp>
 #include <pango/pangocairo.h>
+#include <pango/pango.h>
+
+// Define missing layer shell constants if not present
+#ifndef ZWLR_LAYER_SHELL_V1_LAYER_TOP
+#define ZWLR_LAYER_SHELL_V1_LAYER_TOP 2
+#endif
+#ifndef ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY
+#define ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY 3
+#endif
 
 #include "globals.hpp"
 #include "BarPassElement.hpp"
 
 #include <optional>
+
+// Fallback for configStringToInt if not provided by Hyprland
+static std::optional<int> configStringToInt(const std::string& str) {
+    try {
+        size_t idx = 0;
+        int val = std::stoi(str, &idx, 0);
+        if (idx == str.size())
+            return val;
+    } catch (...) {}
+    return std::nullopt;
+}
 
 std::vector<std::string> splitByDelimiter(const std::string& str, const std::string& delim) {
     std::vector<std::string> out;
@@ -53,7 +73,12 @@ CHyprBar::CHyprBar(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow) {
     m_pTextTex    = makeShared<CTexture>();
     m_pButtonsTex = makeShared<CTexture>();
 
+    // Hyprland 0.5.x+ createAnimation signature: (initial, animVar, config, pWindow, damageMode)
+#ifdef HYPRLAND_050
+    g_pAnimationManager->createAnimation(CHyprColor{**PCOLOR}, m_cRealBarColor, g_pConfigManager->getAnimationPropertyConfig("border"), pWindow, DAMAGE_NONE);
+#else
     g_pAnimationManager->createAnimation(CHyprColor{**PCOLOR}, m_cRealBarColor, g_pConfigManager->getAnimationPropertyConfig("border"), pWindow, AVARDAMAGE_NONE);
+#endif
     m_cRealBarColor->setUpdateCallback([&](auto) { damageEntire(); });
 }
 
@@ -63,7 +88,9 @@ CHyprBar::~CHyprBar() {
     HyprlandAPI::unregisterCallback(PHANDLE, m_pTouchUpCallback);
     HyprlandAPI::unregisterCallback(PHANDLE, m_pTouchMoveCallback);
     HyprlandAPI::unregisterCallback(PHANDLE, m_pMouseMoveCallback);
-    std::erase(g_pGlobalState->bars, m_self);
+    // C++17 erase-remove idiom
+    auto& bars = g_pGlobalState->bars;
+    bars.erase(std::remove(bars.begin(), bars.end(), m_self), bars.end());
 }
 
 SDecorationPositioningInfo CHyprBar::getPositioningInfo() {
@@ -198,7 +225,7 @@ void CHyprBar::handleDownEvent(SCallbackInfo& info, std::optional<ITouch::SDownE
                 g_pInputManager->mouseMoveUnified(e.timeMs);
             }
             g_pKeybindManager->m_dispatchers["mouse"]("0movewindow");
-            Debug::log(LOG, "[hyprbars] Dragging ended on {:x}", (uintptr_t)PWINDOW.get());
+            Debug::log("[hyprbars] Dragging ended");
         }
 
         m_bDraggingThis = false;
@@ -242,7 +269,7 @@ void CHyprBar::handleUpEvent(SCallbackInfo& info) {
         g_pKeybindManager->m_dispatchers["mouse"]("0movewindow");
         m_bDraggingThis = false;
 
-        Debug::log(LOG, "[hyprbars] Dragging ended on {:x}", (uintptr_t)m_pWindow.lock().get());
+    Debug::log("[hyprbars] Dragging ended");
     }
 
     m_bDragPending = false;
@@ -252,7 +279,7 @@ void CHyprBar::handleUpEvent(SCallbackInfo& info) {
 void CHyprBar::handleMovement() {
     g_pKeybindManager->m_dispatchers["mouse"]("1movewindow");
     m_bDraggingThis = true;
-    Debug::log(LOG, "[hyprbars] Dragging initiated on {:x}", (uintptr_t)m_pWindow.lock().get());
+    Debug::log("[hyprbars] Dragging initiated");
     return;
 }
 
@@ -872,14 +899,12 @@ PHLWINDOW CHyprBar::getOwner() {
 }
 
 void CHyprBar::updateRules() {
-    const auto PWINDOW              = m_pWindow.lock();
+    const auto PWINDOW = m_pWindow.lock();
     bool prevHidden = m_hidden;
     auto prevForcedTitleColor = m_bForcedTitleColor;
     // NOTE: The following loop assumes you have a rules vector. If not, comment it out or implement as needed.
     // for (auto& r : rules) { ... }
-    auto       rules                = PWINDOW->m_matchedRules;
-    auto       prevHidden           = m_hidden;
-    auto       prevForcedTitleColor = m_bForcedTitleColor;
+    auto rules = PWINDOW->m_matchedRules;
 
     m_bForcedBarHeight  = std::nullopt;
     m_bForcedBarPadding = std::nullopt;
