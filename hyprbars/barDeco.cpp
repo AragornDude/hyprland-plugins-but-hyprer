@@ -1210,3 +1210,4 @@ void CHyprBar::damageOnButtonHover() {
         }
 
     }
+}
