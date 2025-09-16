@@ -731,6 +731,10 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
                         scaledButtonSize};
 
             if (!localIconOnHover || (localIconOnHover && m_iButtonHoverState > 0))
+#ifdef HYPRLAND_050
+                CHyprOpenGLImpl::STextureRenderData data;
+                data.alpha = alpha;
+#endif
                 g_pHyprOpenGL->renderTexture(button.iconTex, pos, a);
             offset += scaledButtonsPad + scaledButtonSize;
 
@@ -768,6 +772,10 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
                         scaledButtonSize};
 
             if (!localIconOnHover || (localIconOnHover && m_iButtonHoverState > 0))
+#ifdef HYPRLAND_050
+                CHyprOpenGLImpl::STextureRenderData data;
+                data.alpha = alpha;
+#endif
                 g_pHyprOpenGL->renderTexture(button.iconTex, pos, a);
             offset += scaledButtonsPad + scaledButtonSize;
 
@@ -894,6 +902,11 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
         windowBox.translate(WORKSPACEOFFSET).scale(pMonitor->m_scale).round();
+#ifdef HYPRLAND_050
+        CHyprOpenGLImpl::SRectRenderData data;
+        data.rounding = rounding;
+        data.roundingPower = roundingPower;
+#endif
         g_pHyprOpenGL->renderRect(windowBox, CHyprColor(0, 0, 0, 0), scaledRounding, m_pWindow->roundingPower());
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
@@ -902,8 +915,18 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     }
 
     if (SHOULDBLUR)
+#ifdef HYPRLAND_050
+        CHyprOpenGLImpl::SRectRenderData data;
+        data.rounding = rounding;
+        data.roundingPower = roundingPower;
+#endif
         g_pHyprOpenGL->renderRect(titleBarBox, color, scaledRounding, m_pWindow->roundingPower());
     else
+#ifdef HYPRLAND_050
+        CHyprOpenGLImpl::SRectRenderData data;
+        data.rounding = rounding;
+        data.roundingPower = roundingPower;
+#endif
         g_pHyprOpenGL->renderRect(titleBarBox, color, scaledRounding, m_pWindow->roundingPower());
 
     // render title
@@ -932,6 +955,10 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
 
     CBox textBox = {titleBarBox.x, titleBarBox.y, (int)BARBUF.x, (int)BARBUF.y};
     if (localTitleEnabled)
+#ifdef HYPRLAND_050
+        CHyprOpenGLImpl::STextureRenderData data;
+        data.alpha = alpha;
+#endif
         g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, a);
 
     if (m_bButtonsDirty || m_bWindowSizeChanged) {
@@ -939,6 +966,10 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         m_bButtonsDirty = false;
     }
 
+#ifdef HYPRLAND_050
+    CHyprOpenGLImpl::STextureRenderData data;
+    data.alpha = alpha;
+#endif
     g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, a);
 
     g_pHyprOpenGL->scissor(nullptr);
