@@ -17,13 +17,6 @@
 
 #include <optional>
 
-std::optional<int> configStringToInt(const std::string& s) {
-    try {
-        return std::stoi(s);
-    } catch (...) {
-        return std::nullopt;
-    }
-}
 std::vector<std::string> splitByDelimiter(const std::string& str, const std::string& delim) {
     std::vector<std::string> out;
     size_t start = 0, end;
@@ -1003,52 +996,66 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
     // Bar Window Rules
     if (r->m_rule == "plugin:hyprbars:nobar")
         m_hidden = true;
-    else if (r->m_rule.find("plugin:hyprbars:bar_height") == 0)
-        m_bForcedBarHeight = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.find("plugin:hyprbars:bar_padding") == 0)
-        m_bForcedBarPadding = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.find("plugin:hyprbars:bar_color") == 0)
-        m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
-    else if (r->m_rule.find("plugin:hyprbars:bar_blur") == 0)
-        m_bForcedBarBlur = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.find("plugin:hyprbars:bar_part_of_window") == 0)
-        m_bForcedBarPartOfWindow = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.find("plugin:hyprbars:bar_precedence_over_border") == 0)
-        m_bForcedBarPrecedenceOverBorder = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.find("plugin:hyprbars:on_double_click") == 0)
+    else if (r->m_rule.find("plugin:hyprbars:bar_height") == 0) {
+        auto res = configStringToInt(arg);
+        m_bForcedBarHeight = res.has_value() ? static_cast<int>(res.value()) : 0;
+    } else if (r->m_rule.find("plugin:hyprbars:bar_padding") == 0) {
+        auto res = configStringToInt(arg);
+        m_bForcedBarPadding = res.has_value() ? static_cast<int>(res.value()) : 0;
+    } else if (r->m_rule.find("plugin:hyprbars:bar_color") == 0) {
+        auto res = configStringToInt(arg);
+        m_bForcedBarColor = CHyprColor(res.has_value() ? static_cast<int>(res.value()) : 0);
+    } else if (r->m_rule.find("plugin:hyprbars:bar_blur") == 0) {
+        auto res = configStringToInt(arg);
+        m_bForcedBarBlur = res.has_value() ? static_cast<int>(res.value()) : 0;
+    } else if (r->m_rule.find("plugin:hyprbars:bar_part_of_window") == 0) {
+        auto res = configStringToInt(arg);
+        m_bForcedBarPartOfWindow = res.has_value() ? static_cast<int>(res.value()) : 0;
+    } else if (r->m_rule.find("plugin:hyprbars:bar_precedence_over_border") == 0) {
+        auto res = configStringToInt(arg);
+        m_bForcedBarPrecedenceOverBorder = res.has_value() ? static_cast<int>(res.value()) : 0;
+    } else if (r->m_rule.find("plugin:hyprbars:on_double_click") == 0)
         m_bForcedOnDoubleClick = arg;
     // Title Window Rules
-    else if (r->m_rule.find("plugin:hyprbars:bar_title_enabled") == 0)
-        m_bForcedBarTitleEnabled = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.find("plugin:hyprbars:bar_text_font") == 0)
+    else if (r->m_rule.find("plugin:hyprbars:bar_title_enabled") == 0) {
+        auto res = configStringToInt(arg);
+        m_bForcedBarTitleEnabled = res.has_value() ? static_cast<int>(res.value()) : 0;
+    } else if (r->m_rule.find("plugin:hyprbars:bar_text_font") == 0)
         m_bForcedBarTextFont = arg;
-    else if (r->m_rule.find("plugin:hyprbars:bar_text_size") == 0)
-        m_bForcedBarTextSize = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.find("plugin:hyprbars:bar_text_align") == 0)
+    else if (r->m_rule.find("plugin:hyprbars:bar_text_size") == 0) {
+        auto res = configStringToInt(arg);
+        m_bForcedBarTextSize = res.has_value() ? static_cast<int>(res.value()) : 0;
+    } else if (r->m_rule.find("plugin:hyprbars:bar_text_align") == 0)
         m_bForcedBarTextAlign = arg;
-    else if (r->m_rule.find("plugin:hyprbars:title_color") == 0)
-        m_bForcedTitleColor = CHyprColor(configStringToInt(arg).value_or(0));
-    else if (r->m_rule.find("plugin:hyprbars:hyprbars-title") == 0)
+    else if (r->m_rule.find("plugin:hyprbars:title_color") == 0) {
+        auto res = configStringToInt(arg);
+        m_bForcedTitleColor = CHyprColor(res.has_value() ? static_cast<int>(res.value()) : 0);
+    } else if (r->m_rule.find("plugin:hyprbars:hyprbars-title") == 0)
         m_bForcedBarCustomTitle = arg;
     // Buttons Window Rules
-    else if (r->m_rule.find("plugin:hyprbars:icon_on_hover") == 0)
-        m_bForcedIconOnHover = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.find("plugin:hyprbars:bar_buttons_alignment") == 0)
+    else if (r->m_rule.find("plugin:hyprbars:icon_on_hover") == 0) {
+        auto res = configStringToInt(arg);
+        m_bForcedIconOnHover = res.has_value() ? static_cast<int>(res.value()) : 0;
+    } else if (r->m_rule.find("plugin:hyprbars:bar_buttons_alignment") == 0)
         m_bForcedBarButtonsAlignment = arg;
-    else if (r->m_rule.find("plugin:hyprbars:bar_button_padding") == 0)
-        m_bForcedBarButtonPadding = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.find("plugin:hyprbars:inactive_button_color") == 0)
-        m_bForcedInactiveButtonColor = CHyprColor(configStringToInt(arg).value_or(0));
-    else if (r->m_rule.find("plugin:hyprbars:hyprbars-button") == 0) {
+    else if (r->m_rule.find("plugin:hyprbars:bar_button_padding") == 0) {
+        auto res = configStringToInt(arg);
+        m_bForcedBarButtonPadding = res.has_value() ? static_cast<int>(res.value()) : 0;
+    } else if (r->m_rule.find("plugin:hyprbars:inactive_button_color") == 0) {
+        auto res = configStringToInt(arg);
+        m_bForcedInactiveButtonColor = CHyprColor(res.has_value() ? static_cast<int>(res.value()) : 0);
+    } else if (r->m_rule.find("plugin:hyprbars:hyprbars-button") == 0) {
         auto params = splitByDelimiter(arg, ">|<");
         if (params.size() >= 4) {
             WindowRuleButton btn;
-            btn.bgcol = CHyprColor(configStringToInt(params[0]).value_or(0));
+            auto res0 = configStringToInt(params[0]);
+            btn.bgcol = CHyprColor(res0.has_value() ? static_cast<int>(res0.value()) : 0);
             btn.size = std::stoi(params[1]);
             btn.icon = params[2];
             btn.cmd = params[3];
             if (params.size() >= 5) {
-                btn.fgcol = CHyprColor(configStringToInt(params[4]).value_or(0));
+                auto res4 = configStringToInt(params[4]);
+                btn.fgcol = CHyprColor(res4.has_value() ? static_cast<int>(res4.value()) : 0);
                 btn.userfg = true;
             }
             btn.iconTex = makeShared<CTexture>();
