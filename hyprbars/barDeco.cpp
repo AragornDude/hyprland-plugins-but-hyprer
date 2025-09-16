@@ -729,13 +729,7 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
                         scaledButtonSize};
 
             if (!localIconOnHover || (localIconOnHover && m_iButtonHoverState > 0))
-#ifdef HYPRLAND_049
                 g_pHyprOpenGL->renderTexture(button.iconTex, pos, a);
-#else
-                CHyprOpenGLImpl::STextureRenderData data;
-                data.alpha = a;
-                g_pHyprOpenGL->renderTexture(button.iconTex, pos, data);
-#endif
             offset += scaledButtonsPad + scaledButtonSize;
 
             bool currentBit = (m_iButtonHoverState & (1 << i)) != 0;
@@ -772,13 +766,7 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
                         scaledButtonSize};
 
             if (!localIconOnHover || (localIconOnHover && m_iButtonHoverState > 0))
-#ifdef HYPRLAND_049
                 g_pHyprOpenGL->renderTexture(button.iconTex, pos, a);
-#else
-                CHyprOpenGLImpl::STextureRenderData data;
-                data.alpha = a;
-                g_pHyprOpenGL->renderTexture(button.iconTex, pos, data);
-#endif
             offset += scaledButtonsPad + scaledButtonSize;
 
             bool currentBit = (m_iButtonHoverState & (1 << i)) != 0;
@@ -904,14 +892,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
         windowBox.translate(WORKSPACEOFFSET).scale(pMonitor->m_scale).round();
-#ifdef HYPRLAND_049
         g_pHyprOpenGL->renderRect(windowBox, CHyprColor(0, 0, 0, 0), scaledRounding, m_pWindow->roundingPower());
-#else
-        CHyprOpenGLImpl::SRectRenderData data;
-        data.round = scaledRounding;
-        data.roundingPower = m_pWindow->roundingPower();
-        g_pHyprOpenGL->renderRect(windowBox, CHyprColor(0, 0, 0, 0), data);
-#endif
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
         glStencilFunc(GL_NOTEQUAL, 1, -1);
@@ -919,22 +900,9 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
     }
 
     if (SHOULDBLUR)
-#ifdef HYPRLAND_049
         g_pHyprOpenGL->renderRect(titleBarBox, color, scaledRounding, m_pWindow->roundingPower());
-#else
-        CHyprOpenGLImpl::SRectRenderData data;
-        data.round = scaledRounding;
-        data.roundingPower = m_pWindow->roundingPower();
-        g_pHyprOpenGL->renderRect(titleBarBox, color, data);
-#endif
-#ifdef HYPRLAND_049
+    else
         g_pHyprOpenGL->renderRect(titleBarBox, color, scaledRounding, m_pWindow->roundingPower());
-#else
-        CHyprOpenGLImpl::SRectRenderData data;
-        data.round = scaledRounding;
-        data.roundingPower = m_pWindow->roundingPower();
-        g_pHyprOpenGL->renderRect(titleBarBox, color, data);
-#endif
 
     // render title
     int currentTextSize = m_bForcedBarTextSize.value_or(**((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_text_size")->getDataStaticPtr()));
@@ -962,26 +930,15 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
 
     CBox textBox = {titleBarBox.x, titleBarBox.y, (int)BARBUF.x, (int)BARBUF.y};
     if (localTitleEnabled)
-#ifdef HYPRLAND_049
         g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, a);
-#else
-        CHyprOpenGLImpl::STextureRenderData data;
-        data.alpha = a;
-        g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, data);
-#endif
 
     if (m_bButtonsDirty || m_bWindowSizeChanged) {
         renderBarButtons(BARBUF, pMonitor->m_scale);
         m_bButtonsDirty = false;
     }
 
-#ifdef HYPRLAND_049
     g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, a);
-#else
-    CHyprOpenGLImpl::STextureRenderData data;
-    data.alpha = a;
-    g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, data);
-#endif
+
     g_pHyprOpenGL->scissor(nullptr);
 
     renderBarButtonsText(&textBox, pMonitor->m_scale, a);
