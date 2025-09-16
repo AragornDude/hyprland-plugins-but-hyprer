@@ -15,56 +15,12 @@
 #include "globals.hpp"
 #include "BarPassElement.hpp"
 
+#include <optional>
 
-
-std::string substituteTitleVars(const std::string& tpl, PHLWINDOW PWINDOW) {
-    std::string result = tpl;
-    // Replace variables
-    auto replaceAll = [](std::string& str, const std::string& from, const std::string& to) {
-        size_t pos = 0;
-        while ((pos = str.find(from, pos)) != std::string::npos) {
-            str.replace(pos, from.length(), to);
-            pos += to.length();
-        }
-    };
-    auto vecToStr = [](const Vector2D& v) {
-        return std::to_string(v.x) + "," + std::to_string(v.y);
-    };
-    auto colorToStr = [](const CHyprColor& c) {
-        return std::to_string(c.r) + "," + std::to_string(c.g) + "," + std::to_string(c.b) + "," + std::to_string(c.a);
-    };
-    
-    for (const auto& [name, value] : g_titleVars) {
-        replaceAll(result, "{" + name + "}", value);
-    }
-
-    // Date and Time
-    std::time_t t = std::time(nullptr);
-    std::tm tm;
-    localtime_r(&t, &tm);
-    char dateBuf[32], timeBuf[32];
-    std::strftime(dateBuf, sizeof(dateBuf), "%Y-%m-%d", &tm);
-    std::strftime(timeBuf, sizeof(timeBuf), "%H:%M:%S", &tm);
-
-
-    // Hyprctl Window Variables Working (those returned by 'hyprctl clients')
-    // Strings
-    replaceAll(result, "{Title}", PWINDOW->m_title);
-    replaceAll(result, "{Class}", PWINDOW->m_class);
-    replaceAll(result, "{InitialTitle}", PWINDOW->m_initialTitle);
-    replaceAll(result, "{InitialClass}", PWINDOW->m_initialClass);
-    replaceAll(result, "{initialWorkspaceToken}", PWINDOW->m_initialWorkspaceToken);
-    // Bools Ints and Floats
-    replaceAll(result, "{isPseudotiled}", PWINDOW->m_isPseudotiled ? "true" : "false");
-    replaceAll(result, "{firstMap}", PWINDOW->m_firstMap ? "true" : "false");
-    replaceAll(result, "{isFloating}", PWINDOW->m_isFloating ? "true" : "false");
-    replaceAll(result, "{draggingTiled}", PWINDOW->m_draggingTiled ? "true" : "false");
-    replaceAll(result, "{isMapped}", PWINDOW->m_isMapped ? "true" : "false");
-    replaceAll(result, "{requestsFloat}", PWINDOW->m_requestsFloat ? "true" : "false");
-    replaceAll(result, "{createdOverFullscreen}", PWINDOW->m_createdOverFullscreen ? "true" : "false");
-    replaceAll(result, "{isX11}", PWINDOW->m_isX11 ? "true" : "false");
-    replaceAll(result, "{X11DoesntWantBorders}", PWINDOW->m_X11DoesntWantBorders ? "true" : "false");
-    replaceAll(result, "{X11ShouldntFocus}", PWINDOW->m_X11ShouldntFocus ? "true" : "false");
+std::optional<int> configStringToInt(const std::string& s) {
+    try {
+        return std::stoi(s);
+    // The following code handles the parsing of rules for the bar decoration
     replaceAll(result, "{noInitialFocus}", PWINDOW->m_noInitialFocus ? "true" : "false");
     replaceAll(result, "{wantsInitialFullscreen}", PWINDOW->m_wantsInitialFullscreen ? "true" : "false");
     replaceAll(result, "{fadingOut}", PWINDOW->m_fadingOut ? "true" : "false");
@@ -940,45 +896,45 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         #endif
 
             // render title
-            int currentTextSize = m_bForcedBarTextSize.value_or(**((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_text_size")->getDataStaticPtr()));
-            if (localTitleEnabled && (m_szLastTitle != PWINDOW->m_title || m_bWindowSizeChanged || m_pTextTex->m_texID == 0 || m_bTitleColorChanged || m_iLastTextSize != currentTextSize)) {
-                if (m_bForcedBarCustomTitle.has_value()) {
-                    m_szLastTitle = substituteTitleVars(m_bForcedBarCustomTitle.value(), PWINDOW);
-                } else {
-                    m_szLastTitle = PWINDOW->m_title;
-                }
-                renderBarTitle(BARBUF, pMonitor->m_scale);
-                m_iLastTextSize = currentTextSize;
-            }
-
-            if (ROUNDING) {
-                // cleanup stencil
-                glClearStencil(0);
-                glClear(GL_STENCIL_BUFFER_BIT);
-        #ifdef HYPRLAND_049
-        #else
-                g_pHyprOpenGL->setCapStatus(GL_STENCIL_TEST, false);
-        #endif
-                glStencilMask(-1);
-                glStencilFunc(GL_ALWAYS, 1, 0xFF);
-            }
-
-            CBox textBox = {titleBarBox.x, titleBarBox.y, (int)BARBUF.x, (int)BARBUF.y};
-            if (localTitleEnabled) {
-        #ifdef HYPRLAND_049
-                g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, a);
-        #else
-            CHyprOpenGLImpl::STextureRenderData texData = {};
-            texData.a = a;
-            g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, texData);
-        #endif
-            }
-
-            if (m_bButtonsDirty || m_bWindowSizeChanged) {
-                renderBarButtons(BARBUF, pMonitor->m_scale);
-                m_bButtonsDirty = false;
-            }
-
+        if (r->m_rule == "plugin:hyprbars:nobar")
+            m_hidden = true;
+        else if (r->m_rule.find("plugin:hyprbars:bar_height") == 0)
+            m_bForcedBarHeight = configStringToInt(arg).value_or(0);
+        else if (r->m_rule.find("plugin:hyprbars:bar_padding") == 0)
+            m_bForcedBarPadding = configStringToInt(arg).value_or(0);
+        else if (r->m_rule.find("plugin:hyprbars:bar_color") == 0)
+            m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
+        else if (r->m_rule.find("plugin:hyprbars:bar_blur") == 0)
+            m_bForcedBarBlur = configStringToInt(arg).value_or(0);
+        else if (r->m_rule.find("plugin:hyprbars:bar_part_of_window") == 0)
+            m_bForcedBarPartOfWindow = configStringToInt(arg).value_or(0);
+        else if (r->m_rule.find("plugin:hyprbars:bar_precedence_over_border") == 0)
+            m_bForcedBarPrecedenceOverBorder = configStringToInt(arg).value_or(0);
+        else if (r->m_rule.find("plugin:hyprbars:on_double_click") == 0)
+            m_bForcedOnDoubleClick = arg;
+        // Title Window Rules
+        else if (r->m_rule.find("plugin:hyprbars:bar_title_enabled") == 0)
+            m_bForcedBarTitleEnabled = configStringToInt(arg).value_or(0);
+        else if (r->m_rule.find("plugin:hyprbars:bar_text_font") == 0)
+            m_bForcedBarTextFont = arg;
+        else if (r->m_rule.find("plugin:hyprbars:bar_text_size") == 0)
+            m_bForcedBarTextSize = configStringToInt(arg).value_or(0);
+        else if (r->m_rule.find("plugin:hyprbars:bar_text_align") == 0)
+            m_bForcedBarTextAlign = arg;
+        else if (r->m_rule.find("plugin:hyprbars:title_color") == 0)
+            m_bForcedTitleColor = CHyprColor(configStringToInt(arg).value_or(0));
+        else if (r->m_rule.find("plugin:hyprbars:hyprbars-title") == 0)
+            m_bForcedBarCustomTitle = arg;
+        // Buttons Window Rules
+        else if (r->m_rule.find("plugin:hyprbars:icon_on_hover") == 0)
+            m_bForcedIconOnHover = configStringToInt(arg).value_or(0);
+        else if (r->m_rule.find("plugin:hyprbars:bar_buttons_alignment") == 0)
+            m_bForcedBarButtonsAlignment = arg;
+        else if (r->m_rule.find("plugin:hyprbars:bar_button_padding") == 0)
+            m_bForcedBarButtonPadding = configStringToInt(arg).value_or(0);
+        else if (r->m_rule.find("plugin:hyprbars:inactive_button_color") == 0)
+            m_bForcedInactiveButtonColor = CHyprColor(configStringToInt(arg).value_or(0));
+        else if (r->m_rule.find("plugin:hyprbars:hyprbars-button") == 0){
         #ifdef HYPRLAND_049
             g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, a);
         #else
@@ -1103,56 +1059,54 @@ void CHyprBar::updateRules() {
 }
 
 void CHyprBar::applyRule(const SP<CWindowRule>& r) {
-    auto arg = r->m_rule.substr(r->m_rule.find_first_of(' ') + 1);
+    // Extract argument after first space, or empty string if not found
+    std::string arg;
+    size_t spacePos = r->m_rule.find_first_of(' ');
+    if (spacePos != std::string::npos)
+        arg = r->m_rule.substr(spacePos + 1);
+    else
+        arg = "";
+
     // Bar Window Rules
     if (r->m_rule == "plugin:hyprbars:nobar")
         m_hidden = true;
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_height"))
+    else if (r->m_rule.find("plugin:hyprbars:bar_height") == 0)
         m_bForcedBarHeight = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_padding"))
+    else if (r->m_rule.find("plugin:hyprbars:bar_padding") == 0)
         m_bForcedBarPadding = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_color"))
+    else if (r->m_rule.find("plugin:hyprbars:bar_color") == 0)
         m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_blur"))
+    else if (r->m_rule.find("plugin:hyprbars:bar_blur") == 0)
         m_bForcedBarBlur = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_part_of_window"))
+    else if (r->m_rule.find("plugin:hyprbars:bar_part_of_window") == 0)
         m_bForcedBarPartOfWindow = configStringToInt(arg).value_or(0);
     else if (r->m_rule.find("plugin:hyprbars:bar_precedence_over_border") == 0)
         m_bForcedBarPrecedenceOverBorder = configStringToInt(arg).value_or(0);
     else if (r->m_rule.find("plugin:hyprbars:on_double_click") == 0)
         m_bForcedOnDoubleClick = arg;
     // Title Window Rules
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_title_enabled"))
+    else if (r->m_rule.find("plugin:hyprbars:bar_title_enabled") == 0)
         m_bForcedBarTitleEnabled = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_font"))
+    else if (r->m_rule.find("plugin:hyprbars:bar_text_font") == 0)
         m_bForcedBarTextFont = arg;
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_size"))
+    else if (r->m_rule.find("plugin:hyprbars:bar_text_size") == 0)
         m_bForcedBarTextSize = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_text_align"))
+    else if (r->m_rule.find("plugin:hyprbars:bar_text_align") == 0)
         m_bForcedBarTextAlign = arg;
     else if (r->m_rule.find("plugin:hyprbars:title_color") == 0)
         m_bForcedTitleColor = CHyprColor(configStringToInt(arg).value_or(0));
     else if (r->m_rule.find("plugin:hyprbars:hyprbars-title") == 0)
         m_bForcedBarCustomTitle = arg;
     // Buttons Window Rules
-    else if (r->m_rule.starts_with("plugin:hyprbars:icon_on_hover"))
+    else if (r->m_rule.find("plugin:hyprbars:icon_on_hover") == 0)
         m_bForcedIconOnHover = configStringToInt(arg).value_or(0);
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_buttons_alignment"))
+    else if (r->m_rule.find("plugin:hyprbars:bar_buttons_alignment") == 0)
         m_bForcedBarButtonsAlignment = arg;
-    else if (r->m_rule.starts_with("plugin:hyprbars:bar_button_padding"))
+    else if (r->m_rule.find("plugin:hyprbars:bar_button_padding") == 0)
         m_bForcedBarButtonPadding = configStringToInt(arg).value_or(0);
     else if (r->m_rule.find("plugin:hyprbars:inactive_button_color") == 0)
-// Fallback implementation for configStringToInt if missing
-#include <optional>
-std::optional<int> configStringToInt(const std::string& s) {
-    try {
-        return std::stoi(s);
-    } catch (...) {
-        return std::nullopt;
-    }
-}
         m_bForcedInactiveButtonColor = CHyprColor(configStringToInt(arg).value_or(0));
-    else if (r->m_rule.starts_with("plugin:hyprbars:hyprbars-button")){
+    else if (r->m_rule.find("plugin:hyprbars:hyprbars-button") == 0) {
         auto params = splitByDelimiter(arg, ">|<");
         if (params.size() >= 4) {
             WindowRuleButton btn;
@@ -1160,9 +1114,10 @@ std::optional<int> configStringToInt(const std::string& s) {
             btn.size = std::stoi(params[1]);
             btn.icon = params[2];
             btn.cmd = params[3];
-            if (params.size() >= 5)
+            if (params.size() >= 5) {
                 btn.fgcol = CHyprColor(configStringToInt(params[4]).value_or(0));
                 btn.userfg = true;
+            }
             btn.iconTex = makeShared<CTexture>();
             m_windowRuleButtons.push_back(btn);
         }
