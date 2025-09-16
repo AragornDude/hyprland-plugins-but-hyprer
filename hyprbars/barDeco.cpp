@@ -1,4 +1,5 @@
 #include "barDeco.hpp"
+#include <hyprland/src/plugins/PluginAPI.hpp>
 
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/desktop/Window.hpp>
@@ -821,79 +822,8 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
             g_pHyprOpenGL->renderRect(titleBarBox, color, rectData);
         #endif
 
-            // render title
-        if (r->m_rule == "plugin:hyprbars:nobar")
-            m_hidden = true;
-        else if (r->m_rule.find("plugin:hyprbars:bar_height") == 0)
-            m_bForcedBarHeight = configStringToInt(arg).value_or(0);
-        else if (r->m_rule.find("plugin:hyprbars:bar_padding") == 0)
-            m_bForcedBarPadding = configStringToInt(arg).value_or(0);
-        else if (r->m_rule.find("plugin:hyprbars:bar_color") == 0)
-            m_bForcedBarColor = CHyprColor(configStringToInt(arg).value_or(0));
-        else if (r->m_rule.find("plugin:hyprbars:bar_blur") == 0)
-            m_bForcedBarBlur = configStringToInt(arg).value_or(0);
-        else if (r->m_rule.find("plugin:hyprbars:bar_part_of_window") == 0)
-            m_bForcedBarPartOfWindow = configStringToInt(arg).value_or(0);
-        else if (r->m_rule.find("plugin:hyprbars:bar_precedence_over_border") == 0)
-            m_bForcedBarPrecedenceOverBorder = configStringToInt(arg).value_or(0);
-        else if (r->m_rule.find("plugin:hyprbars:on_double_click") == 0)
-            m_bForcedOnDoubleClick = arg;
-        // Title Window Rules
-        else if (r->m_rule.find("plugin:hyprbars:bar_title_enabled") == 0)
-            m_bForcedBarTitleEnabled = configStringToInt(arg).value_or(0);
-        else if (r->m_rule.find("plugin:hyprbars:bar_text_font") == 0)
-            m_bForcedBarTextFont = arg;
-        else if (r->m_rule.find("plugin:hyprbars:bar_text_size") == 0)
-            m_bForcedBarTextSize = configStringToInt(arg).value_or(0);
-        else if (r->m_rule.find("plugin:hyprbars:bar_text_align") == 0)
-            m_bForcedBarTextAlign = arg;
-        else if (r->m_rule.find("plugin:hyprbars:title_color") == 0)
-            m_bForcedTitleColor = CHyprColor(configStringToInt(arg).value_or(0));
-        else if (r->m_rule.find("plugin:hyprbars:hyprbars-title") == 0)
-            m_bForcedBarCustomTitle = arg;
-        // Buttons Window Rules
-        else if (r->m_rule.find("plugin:hyprbars:icon_on_hover") == 0)
-            m_bForcedIconOnHover = configStringToInt(arg).value_or(0);
-        else if (r->m_rule.find("plugin:hyprbars:bar_buttons_alignment") == 0)
-            m_bForcedBarButtonsAlignment = arg;
-        else if (r->m_rule.find("plugin:hyprbars:bar_button_padding") == 0)
-            m_bForcedBarButtonPadding = configStringToInt(arg).value_or(0);
-        else if (r->m_rule.find("plugin:hyprbars:inactive_button_color") == 0)
-            m_bForcedInactiveButtonColor = CHyprColor(configStringToInt(arg).value_or(0));
-        else if (r->m_rule.find("plugin:hyprbars:hyprbars-button") == 0){
-        #ifdef HYPRLAND_049
-            g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, a);
-        #else
-            CHyprOpenGLImpl::STextureRenderData btnData = {};
-            btnData.a = a;
-            g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, btnData);
-        #endif
-            g_pHyprOpenGL->scissor(nullptr);
-
-            renderBarButtonsText(&textBox, pMonitor->m_scale, a);
-
-            m_bWindowSizeChanged = false;
-            m_bTitleColorChanged = false;
-
-            // dynamic updates change the extents
-            if (m_iLastHeight != m_bForcedBarHeight.value_or(**PHEIGHT)) {
-                g_pLayoutManager->getCurrentLayout()->recalculateWindow(PWINDOW);
-                m_iLastHeight = m_bForcedBarHeight.value_or(**PHEIGHT);
-            }
-
-    g_pHyprOpenGL->scissor(nullptr);
-
-    renderBarButtonsText(&textBox, pMonitor->m_scale, a);
-
-    m_bWindowSizeChanged = false;
-    m_bTitleColorChanged = false;
-
-    // dynamic updates change the extents
-    if (m_iLastHeight != m_bForcedBarHeight.value_or(**PHEIGHT)) {
-        g_pLayoutManager->getCurrentLayout()->recalculateWindow(PWINDOW);
-        m_iLastHeight = m_bForcedBarHeight.value_or(**PHEIGHT);
-    }
-    }
+            // ...existing code...
+        }
     }
 }
 
@@ -980,7 +910,12 @@ void CHyprBar::updateRules() {
 
     if (prevHidden != m_hidden)
         g_pDecorationPositioner->repositionDeco(this);
-    if (prevForcedTitleColor != m_bForcedTitleColor)
+    if (prevForcedTitleColor.has_value() != m_bForcedTitleColor.has_value() ||
+        (prevForcedTitleColor.has_value() && m_bForcedTitleColor.has_value() &&
+         (prevForcedTitleColor.value().r != m_bForcedTitleColor.value().r ||
+          prevForcedTitleColor.value().g != m_bForcedTitleColor.value().g ||
+          prevForcedTitleColor.value().b != m_bForcedTitleColor.value().b ||
+          prevForcedTitleColor.value().a != m_bForcedTitleColor.value().a)))
         m_bTitleColorChanged = true;
 }
 
