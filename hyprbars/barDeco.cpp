@@ -908,7 +908,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         g_pHyprOpenGL->renderRect(windowBox, CHyprColor(0, 0, 0, 0), scaledRounding, m_pWindow->roundingPower());
 #else
         CHyprOpenGLImpl::SRectRenderData data;
-        data.rounding = scaledRounding;
+        data.round = scaledRounding;
         data.roundingPower = m_pWindow->roundingPower();
         g_pHyprOpenGL->renderRect(windowBox, CHyprColor(0, 0, 0, 0), data);
 #endif
@@ -923,7 +923,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         g_pHyprOpenGL->renderRect(titleBarBox, color, scaledRounding, m_pWindow->roundingPower());
 #else
         CHyprOpenGLImpl::SRectRenderData data;
-        data.rounding = scaledRounding;
+        data.round = scaledRounding;
         data.roundingPower = m_pWindow->roundingPower();
         g_pHyprOpenGL->renderRect(titleBarBox, color, data);
 #endif
@@ -931,7 +931,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         g_pHyprOpenGL->renderRect(titleBarBox, color, scaledRounding, m_pWindow->roundingPower());
 #else
         CHyprOpenGLImpl::SRectRenderData data;
-        data.rounding = scaledRounding;
+        data.round = scaledRounding;
         data.roundingPower = m_pWindow->roundingPower();
         g_pHyprOpenGL->renderRect(titleBarBox, color, data);
 #endif

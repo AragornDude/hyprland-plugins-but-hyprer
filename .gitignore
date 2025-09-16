@@ -39,6 +39,7 @@ result
 result-man
 
 *.code-workspace
+*.original.cpp
 
 borders-plus-plus/
 csgo-vulkan-fix/
