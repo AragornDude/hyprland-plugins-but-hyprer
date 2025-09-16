@@ -1208,5 +1208,5 @@ void CHyprBar::damageOnButtonHover() {
 
             offset += m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) + b.size;
         }
+
     }
-}
