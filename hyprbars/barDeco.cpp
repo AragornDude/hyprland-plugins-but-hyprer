@@ -1011,8 +1011,10 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
         g_pLayoutManager->getCurrentLayout()->recalculateWindow(PWINDOW);
         m_iLastHeight = m_bForcedBarHeight.value_or(**PHEIGHT);
     }
+    }
+    }
 }
-}
+
 
 eDecorationType CHyprBar::getDecorationType() {
     return DECORATION_CUSTOM;
