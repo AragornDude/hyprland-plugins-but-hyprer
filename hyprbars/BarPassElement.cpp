@@ -7,6 +7,8 @@ CBarPassElement::CBarPassElement(const CBarPassElement::SBarData& data_) : data(
 }
 
 void CBarPassElement::draw(const CRegion& damage) {
+    // Diagnostic: confirm render pass element is being executed by the renderer
+    hyprbars::lowlevel_log("CBarPassElement::draw: enter");
     data.deco->renderPass(g_pHyprOpenGL->m_renderData.pMonitor.lock(), data.a);
 }
 

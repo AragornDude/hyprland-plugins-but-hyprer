@@ -903,6 +903,7 @@ void CHyprBar::draw(PHLMONITOR pMonitor, const float& a) {
 }
 
 void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
+    hyprbars::lowlevel_log("CHyprBar::renderPass: enter");
     const auto         PWINDOW = m_pWindow.lock();
 
     static auto* const PCOLOR            = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_color")->getDataStaticPtr();
