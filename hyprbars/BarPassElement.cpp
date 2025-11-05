@@ -1,6 +1,7 @@
 #include "BarPassElement.hpp"
 #include <hyprland/src/render/OpenGL.hpp>
 #include "barDeco.hpp"
+#include "hyprbars_logger.hpp"
 
 CBarPassElement::CBarPassElement(const CBarPassElement::SBarData& data_) : data(data_) {
     ;

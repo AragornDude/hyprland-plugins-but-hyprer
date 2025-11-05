@@ -1115,7 +1115,7 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
                 glStencilFunc(GL_ALWAYS, 1, 0xFF);
             }
 
-            CBox textBox = {titleBarBox.x, titleBarBox.y, (int)BARBUF.x, (int)BARBUF.y};
+            CBox textBox = {titleBarBox.x, titleBarBox.y, static_cast<double>(static_cast<int>(BARBUF.x)), static_cast<double>(static_cast<int>(BARBUF.y))};
 
             // runtime diagnostic: log BARBUF, texture ids, title length and whether title rendering is enabled
             {
