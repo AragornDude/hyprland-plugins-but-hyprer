@@ -11,16 +11,21 @@
 #include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/managers/animation/AnimationManager.hpp>
 #include <hyprland/src/protocols/LayerShell.hpp>
+#include <algorithm>
+#include <limits>
 #include <cairo/cairo.h>
+
+#include "hyprbars_utils.hpp"
+#include "hyprbars_logger.hpp"
+
+// Pango headers with C linkage to avoid name mangling issues
+extern "C" {
 #include <pango/pango.h>
 #include <pango/pango-layout.h>
 #include <pango/pango-font.h>
 #include <pango/pangocairo.h>
 #include <glib-object.h>
-#include "hyprbars_utils.hpp"
-#include "hyprbars_logger.hpp"
-#include <algorithm>
-#include <limits>
+}
 //
 // Define missing layer shell constants if not present
 #ifndef ZWLR_LAYER_SHELL_V1_LAYER_TOP
@@ -214,9 +219,44 @@ CHyprBar::CHyprBar(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow) {
 }
 
 CHyprBar::~CHyprBar() {
-    /* unregisterCallback is marked deprecated in newer PluginAPI.hpp; suppress deprecation
-     * warnings locally until we migrate to the newer API. This keeps the build output clean.
-     */
+    hyprbars::lowlevel_log("CHyprBar::~CHyprBar: enter");
+
+    // Clean up textures
+    if (m_pTextTex) {
+        if (m_pTextTex->m_texID != 0) {
+            char dbg[256];
+            snprintf(dbg, sizeof(dbg), "~CHyprBar: destroying text texture %u", 
+                     (unsigned)m_pTextTex->m_texID);
+            hyprbars::lowlevel_log(dbg);
+            m_pTextTex->destroyTexture();
+        }
+        m_pTextTex = nullptr;
+    }
+
+    if (m_pButtonsTex) {
+        if (m_pButtonsTex->m_texID != 0) {
+            char dbg[256];
+            snprintf(dbg, sizeof(dbg), "~CHyprBar: destroying buttons texture %u", 
+                     (unsigned)m_pButtonsTex->m_texID);
+            hyprbars::lowlevel_log(dbg);
+            m_pButtonsTex->destroyTexture();
+        }
+        m_pButtonsTex = nullptr;
+    }
+
+    // Clean up button textures
+    for (auto& button : m_windowRuleButtons) {
+        if (button.iconTex && button.iconTex->m_texID != 0) {
+            char dbg[256];
+            snprintf(dbg, sizeof(dbg), "~CHyprBar: destroying button icon texture %u", 
+                     (unsigned)button.iconTex->m_texID);
+            hyprbars::lowlevel_log(dbg);
+            button.iconTex->destroyTexture();
+        }
+        button.iconTex = nullptr;
+    }
+
+    // Unregister callbacks
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     HyprlandAPI::unregisterCallback(PHANDLE, m_pMouseButtonCallback);
@@ -225,9 +265,12 @@ CHyprBar::~CHyprBar() {
     HyprlandAPI::unregisterCallback(PHANDLE, m_pTouchMoveCallback);
     HyprlandAPI::unregisterCallback(PHANDLE, m_pMouseMoveCallback);
 #pragma GCC diagnostic pop
-    // C++17 erase-remove idiom
+
+    // Remove from global state
     auto& bars = g_pGlobalState->bars;
     bars.erase(std::remove(bars.begin(), bars.end(), m_self), bars.end());
+
+    hyprbars::lowlevel_log("CHyprBar::~CHyprBar: exit");
 }
 
 SDecorationPositioningInfo CHyprBar::getPositioningInfo() {
@@ -481,32 +524,54 @@ bool CHyprBar::doButtonPress(Hyprlang::INT* const* PBARPADDING, Hyprlang::INT* c
 }
 
 bool CHyprBar::createTextureFromCairoSurface(SP<CTexture> out, cairo_surface_t* surface, cairo_t* cr, const Vector2D& bufferSize, const char* debugName) {
+    // Log entry and state
+    char dbg[256];
+    snprintf(dbg, sizeof(dbg), "%s: enter with bufferSize=%dx%d", debugName, (int)bufferSize.x, (int)bufferSize.y);
+    hyprbars::lowlevel_log(dbg);
+
+    // If the texture already exists, destroy it first
+    if (out->m_texID != 0) {
+        snprintf(dbg, sizeof(dbg), "%s: destroying existing texture %u", debugName, (unsigned)out->m_texID);
+        hyprbars::lowlevel_log(dbg);
+        out->destroyTexture();
+    }
+
     // Flush the cairo surface to ensure all drawing is complete
     cairo_surface_flush(surface);
 
-    // Get the pixel data
+    // Get the pixel data and verify status
+    const auto SURF_STATUS = cairo_surface_status(surface);
+    if (SURF_STATUS != CAIRO_STATUS_SUCCESS) {
+        snprintf(dbg, sizeof(dbg), "%s: cairo surface error: %s", debugName, cairo_status_to_string(SURF_STATUS));
+        hyprbars::lowlevel_log(dbg);
+        return false;
+    }
+
     const auto DATA = cairo_image_surface_get_data(surface);
     if (!DATA) {
-        char dbg[256];
         snprintf(dbg, sizeof(dbg), "%s: failed to get cairo surface data", debugName);
         hyprbars::lowlevel_log(dbg);
         return false;
     }
 
-    // Allocate the GL texture
+    // Log cairo surface format and stride
+    snprintf(dbg, sizeof(dbg), "%s: cairo surface format=%d stride=%d", debugName,
+             cairo_image_surface_get_format(surface),
+             cairo_image_surface_get_stride(surface));
+    hyprbars::lowlevel_log(dbg);
+
+    // Allocate the GL texture and verify
     out->allocate();
     if (out->m_texID == 0) {
-        char dbg[256];
         snprintf(dbg, sizeof(dbg), "%s: texture allocation failed", debugName);
         hyprbars::lowlevel_log(dbg);
         return false;
     }
 
-    char dbg[256];
+    // Set up the texture parameters with error checking
     snprintf(dbg, sizeof(dbg), "%s: binding texture %u", debugName, (unsigned)out->m_texID);
     hyprbars::lowlevel_log(dbg);
 
-    // Set up the texture parameters
     glBindTexture(GL_TEXTURE_2D, out->m_texID);
     GLenum error = glGetError();
     if (error != GL_NO_ERROR) {
@@ -516,15 +581,34 @@ bool CHyprBar::createTextureFromCairoSurface(SP<CTexture> out, cairo_surface_t* 
     }
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    error = glGetError();
+    if (error != GL_NO_ERROR) {
+        snprintf(dbg, sizeof(dbg), "%s: glTexParameteri MAG_FILTER failed with error 0x%x", debugName, error);
+        hyprbars::lowlevel_log(dbg);
+        return false;
+    }
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    error = glGetError();
+    if (error != GL_NO_ERROR) {
+        snprintf(dbg, sizeof(dbg), "%s: glTexParameteri MIN_FILTER failed with error 0x%x", debugName, error);
+        hyprbars::lowlevel_log(dbg);
+        return false;
+    }
 
 #ifndef GLES2
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
 #endif
 
-    // Upload the texture data
-    snprintf(dbg, sizeof(dbg), "%s: uploading texture data", debugName);
+    // Upload the texture data with detailed error checking
+    snprintf(dbg, sizeof(dbg), "%s: uploading texture data %dx%d", debugName, (int)bufferSize.x, (int)bufferSize.y);
+    hyprbars::lowlevel_log(dbg);
+
+    // Additional OpenGL state verification
+    GLint currentTexture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &currentTexture);
+    snprintf(dbg, sizeof(dbg), "%s: current texture binding = %d", debugName, currentTexture);
     hyprbars::lowlevel_log(dbg);
     
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bufferSize.x, bufferSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
@@ -533,11 +617,22 @@ bool CHyprBar::createTextureFromCairoSurface(SP<CTexture> out, cairo_surface_t* 
     if (error != GL_NO_ERROR) {
         snprintf(dbg, sizeof(dbg), "%s: glTexImage2D failed with error 0x%x", debugName, error);
         hyprbars::lowlevel_log(dbg);
+        
+        // Additional error context
+        GLint maxSize;
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxSize);
+        snprintf(dbg, sizeof(dbg), "%s: GL_MAX_TEXTURE_SIZE = %d", debugName, maxSize);
+        hyprbars::lowlevel_log(dbg);
         return false;
     }
 
-    snprintf(dbg, sizeof(dbg), "%s: texture created successfully, id=%u size=%dx%d",
-             debugName, (unsigned)out->m_texID, (int)bufferSize.x, (int)bufferSize.y);
+    // Verify texture was created correctly
+    GLint width, height;
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+    
+    snprintf(dbg, sizeof(dbg), "%s: texture created successfully, id=%u size=%dx%d, verified size=%dx%d",
+             debugName, (unsigned)out->m_texID, (int)bufferSize.x, (int)bufferSize.y, width, height);
     hyprbars::lowlevel_log(dbg);
 
     return true;
@@ -622,6 +717,12 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
     const std::string& buttonsAlign = m_bForcedBarButtonsAlignment.value_or(*PALIGNBUTTONS);
     const bool BUTTONSRIGHT = buttonsAlign != "left";
 
+    hyprbars::lowlevel_log("renderBarTitle: enter");
+    char dbg[256];
+    snprintf(dbg, sizeof(dbg), "renderBarTitle: bufferSize=%dx%d scale=%.2f", 
+             (int)bufferSize.x, (int)bufferSize.y, scale);
+    hyprbars::lowlevel_log(dbg);
+
     const auto         PWINDOW = m_pWindow.lock();
 
     const auto         BORDERSIZE = PWINDOW->getRealBorderSize();
@@ -644,68 +745,132 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
 
     const CHyprColor COLOR = m_bForcedTitleColor.value_or(**PCOLOR);
 
-    const auto       CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, bufferSize.x, bufferSize.y);
-    const auto       CAIRO        = cairo_create(CAIROSURFACE);
+    // First ensure any existing texture is cleaned up
+    if (m_pTextTex && m_pTextTex->m_texID != 0) {
+        hyprbars::lowlevel_log("renderBarTitle: destroying existing texture");
+        m_pTextTex->destroyTexture();
+    }
 
-    // clear the pixmap
+    // Create the cairo surface and validate
+    const auto CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, bufferSize.x, bufferSize.y);
+    if (cairo_surface_status(CAIROSURFACE) != CAIRO_STATUS_SUCCESS) {
+        snprintf(dbg, sizeof(dbg), "renderBarTitle: failed to create cairo surface: %s",
+                 cairo_status_to_string(cairo_surface_status(CAIROSURFACE)));
+        hyprbars::lowlevel_log(dbg);
+        cairo_surface_destroy(CAIROSURFACE);
+        return;
+    }
+
+    const auto CAIRO = cairo_create(CAIROSURFACE);
+    if (cairo_status(CAIRO) != CAIRO_STATUS_SUCCESS) {
+        snprintf(dbg, sizeof(dbg), "renderBarTitle: failed to create cairo context: %s",
+                 cairo_status_to_string(cairo_status(CAIRO)));
+        hyprbars::lowlevel_log(dbg);
+        cairo_surface_destroy(CAIROSURFACE);
+        return;
+    }
+
+    // Clear the surface
     cairo_save(CAIRO);
     cairo_set_operator(CAIRO, CAIRO_OPERATOR_CLEAR);
     cairo_paint(CAIRO);
     cairo_restore(CAIRO);
 
-    // draw title using Pango
+    // Create and configure Pango layout
     PangoLayout* layout = pango_cairo_create_layout(CAIRO);
+    if (!layout) {
+        hyprbars::lowlevel_log("renderBarTitle: failed to create pango layout");
+        cairo_destroy(CAIRO);
+        cairo_surface_destroy(CAIROSURFACE);
+        return;
+    }
+
+    // Log the title being rendered
+    snprintf(dbg, sizeof(dbg), "renderBarTitle: rendering title='%s'", m_szLastTitle.c_str());
+    hyprbars::lowlevel_log(dbg);
+    
     pango_layout_set_text(layout, m_szLastTitle.c_str(), -1);
 
     const std::string& fontName = m_bForcedBarTextFont.value_or(*PFONT);
     PangoFontDescription* fontDesc = pango_font_description_from_string(fontName.c_str());
+    if (!fontDesc) {
+        hyprbars::lowlevel_log("renderBarTitle: failed to create font description");
+        g_object_unref(layout);
+        cairo_destroy(CAIRO);
+        cairo_surface_destroy(CAIROSURFACE);
+        return;
+    }
+
     pango_font_description_set_size(fontDesc, scaledSize * PANGO_SCALE);
     pango_layout_set_font_description(layout, fontDesc);
     pango_font_description_free(fontDesc);
 
     PangoContext* context = pango_layout_get_context(layout);
-    pango_context_set_base_dir(context, PANGO_DIRECTION_NEUTRAL);
+    if (context) {
+        pango_context_set_base_dir(context, PANGO_DIRECTION_NEUTRAL);
+    }
 
-    // --- Use forced alignment if present ---
+    // Set alignment and width constraints
     const std::string& align = m_bForcedBarTextAlign.value_or(*PALIGN);
+    const int paddingTotal = scaledBarPadding * 2 + scaledButtonsSize + 
+        (std::string{*PALIGN} != "left" ? scaledButtonsSize : 0);
+    const int maxWidth = std::clamp(static_cast<int>(bufferSize.x - paddingTotal), 
+                                   0, std::numeric_limits<int>::max());
 
-    const int paddingTotal = scaledBarPadding * 2 + scaledButtonsSize + (std::string{*PALIGN} != "left" ? scaledButtonsSize : 0);
-    const int maxWidth     = std::clamp(static_cast<int>(bufferSize.x - paddingTotal), 0, std::numeric_limits<int>::max());
+    snprintf(dbg, sizeof(dbg), "renderBarTitle: maxWidth=%d paddingTotal=%d", 
+             maxWidth, paddingTotal);
+    hyprbars::lowlevel_log(dbg);
 
     pango_layout_set_width(layout, maxWidth * PANGO_SCALE);
     pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
 
     cairo_set_source_rgba(CAIRO, COLOR.r, COLOR.g, COLOR.b, COLOR.a);
 
+    // Calculate layout positioning
     int layoutWidth, layoutHeight;
     pango_layout_get_size(layout, &layoutWidth, &layoutHeight);
+    
     int xOffset = 0;
     if (align == "left") {
         xOffset = std::round(scaledBarPadding + (BUTTONSRIGHT ? 0 : scaledButtonsSize));
     } else if (align == "center") {
         xOffset = std::round(((bufferSize.x - scaledBorderSize) / 2.0 - layoutWidth / PANGO_SCALE / 2.0));
     } else if (align == "right") {
-        xOffset = std::round(bufferSize.x - scaledBarPadding - layoutWidth / PANGO_SCALE - (BUTTONSRIGHT ? scaledButtonsSize : 0));
+        xOffset = std::round(bufferSize.x - scaledBarPadding - layoutWidth / PANGO_SCALE - 
+                            (BUTTONSRIGHT ? scaledButtonsSize : 0));
     } else {
         // fallback to center
         xOffset = std::round(((bufferSize.x - scaledBorderSize) / 2.0 - layoutWidth / PANGO_SCALE / 2.0));
     }
     const int yOffset = std::round((bufferSize.y / 2.0 - layoutHeight / PANGO_SCALE / 2.0));
 
+    snprintf(dbg, sizeof(dbg), "renderBarTitle: layout size=%dx%d pos=%d,%d", 
+             layoutWidth/PANGO_SCALE, layoutHeight/PANGO_SCALE, xOffset, yOffset);
+    hyprbars::lowlevel_log(dbg);
+
+    // Render the text
     cairo_move_to(CAIRO, xOffset, yOffset);
     pango_cairo_show_layout(CAIRO, layout);
 
     g_object_unref(layout);
 
-    if (!createTextureFromCairoSurface(m_pTextTex, CAIROSURFACE, CAIRO, bufferSize, "renderBarTitle")) {
-        cairo_destroy(CAIRO);
-        cairo_surface_destroy(CAIROSURFACE);
-        return;
+    // Create texture from the rendered surface
+    bool textureCreated = createTextureFromCairoSurface(m_pTextTex, CAIROSURFACE, CAIRO, 
+                                                       bufferSize, "renderBarTitle");
+
+    if (!textureCreated) {
+        hyprbars::lowlevel_log("renderBarTitle: failed to create texture from surface");
+    } else {
+        snprintf(dbg, sizeof(dbg), "renderBarTitle: successfully created texture %u", 
+                 (unsigned)m_pTextTex->m_texID);
+        hyprbars::lowlevel_log(dbg);
     }
 
-    // delete cairo resources
+    // Cleanup cairo resources
     cairo_destroy(CAIRO);
     cairo_surface_destroy(CAIROSURFACE);
+
+    hyprbars::lowlevel_log("renderBarTitle: exit");
 }
 
 size_t CHyprBar::getVisibleButtonCount(Hyprlang::INT* const* PBARBUTTONPADDING, Hyprlang::INT* const* PBARPADDING, const Vector2D& bufferSize, const float scale) {
@@ -736,9 +901,17 @@ size_t CHyprBar::getVisibleButtonCount(Hyprlang::INT* const* PBARBUTTONPADDING, 
 }
 
 void CHyprBar::renderBarButtons(const Vector2D& bufferSize, const float scale) {
+    hyprbars::lowlevel_log("renderBarButtons: enter");
+    char dbg[256];
+    snprintf(dbg, sizeof(dbg), "renderBarButtons: bufferSize=%dx%d scale=%.2f",
+             (int)bufferSize.x, (int)bufferSize.y, scale);
+    hyprbars::lowlevel_log(dbg);
+
     static auto* const PBARBUTTONPADDING = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_button_padding")->getDataStaticPtr();
     static auto* const PBARPADDING       = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_padding")->getDataStaticPtr();
     static auto* const PALIGNBUTTONS     = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_buttons_alignment")->getDataStaticPtr();
+    
+    // Set up colors
     CHyprColor inactiveColor;
     if (m_bForcedInactiveButtonColor.has_value()) {
         inactiveColor = m_bForcedInactiveButtonColor.value();
@@ -749,47 +922,91 @@ void CHyprBar::renderBarButtons(const Vector2D& bufferSize, const float scale) {
 
     const std::string& buttonsAlign = m_bForcedBarButtonsAlignment.value_or(*PALIGNBUTTONS);
     const bool BUTTONSRIGHT = buttonsAlign != "left";
-    const auto         visibleCount = getVisibleButtonCount(PBARBUTTONPADDING, PBARPADDING, bufferSize, scale);
+    const auto visibleCount = getVisibleButtonCount(PBARBUTTONPADDING, PBARPADDING, bufferSize, scale);
 
-    const auto         CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, bufferSize.x, bufferSize.y);
-    const auto         CAIRO        = cairo_create(CAIROSURFACE);
+    snprintf(dbg, sizeof(dbg), "renderBarButtons: visibleCount=%zu buttonsRight=%d", 
+             visibleCount, BUTTONSRIGHT ? 1 : 0);
+    hyprbars::lowlevel_log(dbg);
 
-    // clear the pixmap
+    // First ensure any existing texture is cleaned up
+    if (m_pButtonsTex && m_pButtonsTex->m_texID != 0) {
+        hyprbars::lowlevel_log("renderBarButtons: destroying existing texture");
+        m_pButtonsTex->destroyTexture();
+    }
+
+    // Create cairo surface for drawing
+    const auto CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, bufferSize.x, bufferSize.y);
+    if (cairo_surface_status(CAIROSURFACE) != CAIRO_STATUS_SUCCESS) {
+        snprintf(dbg, sizeof(dbg), "renderBarButtons: failed to create cairo surface: %s",
+                 cairo_status_to_string(cairo_surface_status(CAIROSURFACE)));
+        hyprbars::lowlevel_log(dbg);
+        return;
+    }
+
+    const auto CAIRO = cairo_create(CAIROSURFACE);
+    if (cairo_status(CAIRO) != CAIRO_STATUS_SUCCESS) {
+        snprintf(dbg, sizeof(dbg), "renderBarButtons: failed to create cairo context: %s",
+                 cairo_status_to_string(cairo_status(CAIRO)));
+        hyprbars::lowlevel_log(dbg);
+        cairo_surface_destroy(CAIROSURFACE);
+        return;
+    }
+
+    // Clear the surface
     cairo_save(CAIRO);
     cairo_set_operator(CAIRO, CAIRO_OPERATOR_CLEAR);
     cairo_paint(CAIRO);
     cairo_restore(CAIRO);
 
-    // draw buttons
+    // Draw buttons
     int offset = m_bForcedBarPadding.value_or(**PBARPADDING) * scale;
+    
     if (!m_windowRuleButtons.empty()) {
+        hyprbars::lowlevel_log("renderBarButtons: drawing window rule buttons");
         for (size_t i = 0; i < visibleCount && i < m_windowRuleButtons.size(); ++i) {
             const auto& button = m_windowRuleButtons[i];
             const auto  scaledButtonSize = button.size * scale;
             const auto  scaledButtonsPad = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) * scale;
 
-        const auto  pos   = Vector2D{BUTTONSRIGHT ? bufferSize.x - offset - scaledButtonSize / 2.0 : offset + scaledButtonSize / 2.0, bufferSize.y / 2.0}.floor();
-        auto        color = button.bgcol;
+            const auto  pos   = Vector2D{
+                BUTTONSRIGHT ? bufferSize.x - offset - scaledButtonSize / 2.0 : offset + scaledButtonSize / 2.0, 
+                bufferSize.y / 2.0
+            }.floor();
 
-        if (inactiveColor.a > 0.0f) {
-            color = m_bWindowHasFocus ? color : inactiveColor;
-            if (button.userfg && button.iconTex->m_texID != 0)
-                button.iconTex->destroyTexture();
-        }
+            auto color = button.bgcol;
+            if (inactiveColor.a > 0.0f) {
+                color = m_bWindowHasFocus ? color : inactiveColor;
+                if (button.userfg && button.iconTex->m_texID != 0) {
+                    hyprbars::lowlevel_log("renderBarButtons: destroying inactive button icon texture");
+                    button.iconTex->destroyTexture();
+                }
+            }
 
-        cairo_set_source_rgba(CAIRO, color.r, color.g, color.b, color.a);
-        cairo_arc(CAIRO, pos.x, pos.y, scaledButtonSize / 2, 0, 2 * M_PI);
-        cairo_fill(CAIRO);
+            snprintf(dbg, sizeof(dbg), "renderBarButtons: drawing button %zu at pos=%d,%d size=%.2f",
+                     i, (int)pos.x, (int)pos.y, scaledButtonSize);
+            hyprbars::lowlevel_log(dbg);
+
+            cairo_set_source_rgba(CAIRO, color.r, color.g, color.b, color.a);
+            cairo_arc(CAIRO, pos.x, pos.y, scaledButtonSize / 2, 0, 2 * M_PI);
+            cairo_fill(CAIRO);
 
             offset += scaledButtonsPad + scaledButtonSize;
         }
     } else {
+        hyprbars::lowlevel_log("renderBarButtons: drawing global buttons");
         for (size_t i = 0; i < visibleCount && i < g_pGlobalState->buttons.size(); ++i) {
             const auto& button = g_pGlobalState->buttons[i];
             const auto  scaledButtonSize = button.size * scale;
             const auto  scaledButtonsPad = m_bForcedBarButtonPadding.value_or(**PBARBUTTONPADDING) * scale;
 
-            const auto  pos = Vector2D{BUTTONSRIGHT ? bufferSize.x - offset - scaledButtonSize / 2.0 : offset + scaledButtonSize / 2.0, bufferSize.y / 2.0}.floor();
+            const auto  pos = Vector2D{
+                BUTTONSRIGHT ? bufferSize.x - offset - scaledButtonSize / 2.0 : offset + scaledButtonSize / 2.0,
+                bufferSize.y / 2.0
+            }.floor();
+
+            snprintf(dbg, sizeof(dbg), "renderBarButtons: drawing button %zu at pos=%d,%d size=%.2f",
+                     i, (int)pos.x, (int)pos.y, scaledButtonSize);
+            hyprbars::lowlevel_log(dbg);
 
             cairo_set_source_rgba(CAIRO, button.bgcol.r, button.bgcol.g, button.bgcol.b, button.bgcol.a);
             cairo_arc(CAIRO, pos.x, pos.y, scaledButtonSize / 2, 0, 2 * M_PI);
@@ -799,15 +1016,23 @@ void CHyprBar::renderBarButtons(const Vector2D& bufferSize, const float scale) {
         }
     }
 
-    if (!createTextureFromCairoSurface(m_pButtonsTex, CAIROSURFACE, CAIRO, bufferSize, "renderBarButtons")) {
-        cairo_destroy(CAIRO);
-        cairo_surface_destroy(CAIROSURFACE);
-        return;
+    // Create GL texture from the rendered surface
+    bool textureCreated = createTextureFromCairoSurface(m_pButtonsTex, CAIROSURFACE, CAIRO, 
+                                                       bufferSize, "renderBarButtons");
+
+    if (!textureCreated) {
+        hyprbars::lowlevel_log("renderBarButtons: failed to create texture from surface");
+    } else {
+        snprintf(dbg, sizeof(dbg), "renderBarButtons: successfully created texture %u",
+                 (unsigned)m_pButtonsTex->m_texID);
+        hyprbars::lowlevel_log(dbg);
     }
 
-    // delete cairo resources
+    // Clean up cairo resources
     cairo_destroy(CAIRO);
     cairo_surface_destroy(CAIROSURFACE);
+
+    hyprbars::lowlevel_log("renderBarButtons: exit");
 }
 
 void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float a) {

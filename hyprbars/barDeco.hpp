@@ -15,6 +15,15 @@
 #include <hyprland/src/managers/input/InputManager.hpp>
 #undef private
 
+// Pango headers with C linkage to avoid name mangling issues
+extern "C" {
+#include <pango/pango.h>
+#include <pango/pango-layout.h>
+#include <pango/pango-font.h>
+#include <pango/pangocairo.h>
+#include <glib-object.h>
+}
+
 class CHyprBar : public IHyprWindowDecoration {
   public:
     CHyprBar(PHLWINDOW);
