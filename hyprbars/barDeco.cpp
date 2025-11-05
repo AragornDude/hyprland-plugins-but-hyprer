@@ -11,8 +11,15 @@
 #include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/managers/animation/AnimationManager.hpp>
 #include <hyprland/src/protocols/LayerShell.hpp>
-#include <pango/pangocairo.h>
+#include <cairo/cairo.h>
 #include <pango/pango.h>
+#include <pango/pango-layout.h>
+#include <pango/pango-font.h>
+#include <pango/pangocairo.h>
+#include <glib-object.h>
+#include "hyprbars_utils.hpp"
+#include <algorithm>
+#include <limits>
 
 // Define missing layer shell constants if not present
 #ifndef ZWLR_LAYER_SHELL_V1_LAYER_TOP
@@ -27,16 +34,65 @@
 
 #include <optional>
 
-// Fallback for configStringToInt if not provided by Hyprland
-static std::optional<int> configStringToInt(const std::string& str) {
+// Local parser: parse color/int strings used by the plugin and return optional<int>.
+// This avoids depending on Hyprland's configStringToInt helper which may change across
+// Hyprland versions or not be visible at compile time.
+static std::optional<int> configStringToIntOpt(const std::string& s) {
+    if (s.empty())
+        return std::nullopt;
+
+    // trim
+    size_t b = s.find_first_not_of(" \t\n\r");
+    size_t e = s.find_last_not_of(" \t\n\r");
+    const std::string t = (b == std::string::npos) ? std::string() : s.substr(b, e - b + 1);
+
     try {
-        size_t idx = 0;
-        int val = std::stoi(str, &idx, 0);
-        if (idx == str.size())
-            return val;
-    } catch (...) {}
+        // colors: rgb(ffffff) or rgba(ffffffff) (hex)
+        if (t.rfind("rgb(", 0) == 0 || t.rfind("rgba(", 0) == 0) {
+            auto start = t.find('(');
+            auto end = t.find(')');
+            if (start != std::string::npos && end != std::string::npos && end > start + 1) {
+                std::string hex = t.substr(start + 1, end - start - 1);
+                // remove possible prefixes/spaces
+                hex.erase(std::remove_if(hex.begin(), hex.end(), ::isspace), hex.end());
+                // If rgb with 6 hex digits, append alpha ff
+                if (hex.size() == 6)
+                    hex += "ff";
+                // only hex digits expected now
+                unsigned long val = std::stoul(hex, nullptr, 16);
+                return static_cast<int>(val);
+            }
+            return std::nullopt;
+        }
+
+        // numeric decimal
+        if (std::all_of(t.begin(), t.end(), [](unsigned char c) { return std::isdigit(c) || c == '+' || c == '-'; })) {
+            int v = std::stoi(t);
+            return v;
+        }
+
+        // fallback: try parse as hex without parentheses
+        bool allhex = !t.empty() && std::all_of(t.begin(), t.end(), [](unsigned char c) { return std::isxdigit(c); });
+        if (allhex) {
+            unsigned long val = std::stoul(t, nullptr, 16);
+            return static_cast<int>(val);
+        }
+    } catch (...) {
+        return std::nullopt;
+    }
+
     return std::nullopt;
 }
+
+// Use Hyprland's configStringToInt (returns std::expected<int64_t,std::string>).
+// Provide a safe fallback for DAMAGE_NONE if not defined by the headers.
+#ifndef DAMAGE_NONE
+#ifdef AVARDAMAGE_NONE
+#define DAMAGE_NONE AVARDAMAGE_NONE
+#else
+#define DAMAGE_NONE 0
+#endif
+#endif
 
 std::vector<std::string> splitByDelimiter(const std::string& str, const std::string& delim) {
     std::vector<std::string> out;
@@ -73,12 +129,8 @@ CHyprBar::CHyprBar(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow) {
     m_pTextTex    = makeShared<CTexture>();
     m_pButtonsTex = makeShared<CTexture>();
 
-    // Hyprland 0.5.x+ createAnimation signature: (initial, animVar, config, pWindow, damageMode)
-#ifdef HYPRLAND_050
-    g_pAnimationManager->createAnimation(CHyprColor{**PCOLOR}, m_cRealBarColor, g_pConfigManager->getAnimationPropertyConfig("border"), pWindow, DAMAGE_NONE);
-#else
-    g_pAnimationManager->createAnimation(CHyprColor{**PCOLOR}, m_cRealBarColor, g_pConfigManager->getAnimationPropertyConfig("border"), pWindow, AVARDAMAGE_NONE);
-#endif
+    // Some Hyprland versions changed createAnimation; set initial value directly to be safe
+    *m_cRealBarColor = CHyprColor{**PCOLOR};
     m_cRealBarColor->setUpdateCallback([&](auto) { damageEntire(); });
 }
 
@@ -210,7 +262,10 @@ void CHyprBar::onTouchMove(SCallbackInfo& info, ITouch::SMotionEvent e) {
         // pin it so you can change workspaces while dragging a window
         g_pKeybindManager->m_dispatchers["pin"]("activewindow");
     }
-    g_pKeybindManager->m_dispatchers["movewindowpixel"](std::format("exact {} {},activewindow", (int)(COORDS.x - (assignedBoxGlobal().w / 2)), (int)COORDS.y));
+    {
+        std::string cmd = std::string("exact ") + std::to_string((int)(COORDS.x - (assignedBoxGlobal().w / 2))) + " " + std::to_string((int)COORDS.y) + ",activewindow";
+        g_pKeybindManager->m_dispatchers["movewindowpixel"](cmd);
+    }
     m_bDraggingThis = true;
 }
 
@@ -245,7 +300,7 @@ void CHyprBar::handleDownEvent(SCallbackInfo& info, std::optional<ITouch::SDownE
             if (m_bTouchEv)
                 g_pKeybindManager->m_dispatchers["settiled"]("activewindow");
             g_pKeybindManager->m_dispatchers["mouse"]("0movewindow");
-            Debug::log("[hyprbars] Dragging ended");
+            Debug::log(LOG, "[hyprbars] Dragging ended");
         }
 
         m_bDraggingThis = false;
@@ -291,7 +346,7 @@ void CHyprBar::handleUpEvent(SCallbackInfo& info) {
         if (m_bTouchEv)
             g_pKeybindManager->m_dispatchers["settiled"]("activewindow");
 
-    Debug::log("[hyprbars] Dragging ended");
+    Debug::log(LOG, "[hyprbars] Dragging ended");
     }
 
     m_bDragPending = false;
@@ -302,7 +357,7 @@ void CHyprBar::handleUpEvent(SCallbackInfo& info) {
 void CHyprBar::handleMovement() {
     g_pKeybindManager->m_dispatchers["mouse"]("1movewindow");
     m_bDraggingThis = true;
-    Debug::log("[hyprbars] Dragging initiated");
+    Debug::log(LOG, "[hyprbars] Dragging initiated");
     return;
 }
 
@@ -461,7 +516,7 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
     const std::string& align = m_bForcedBarTextAlign.value_or(*PALIGN);
 
     const int paddingTotal = scaledBarPadding * 2 + scaledButtonsSize + (std::string{*PALIGN} != "left" ? scaledButtonsSize : 0);
-    const int maxWidth     = std::clamp(static_cast<int>(bufferSize.x - paddingTotal), 0, INT_MAX);
+    const int maxWidth     = std::clamp(static_cast<int>(bufferSize.x - paddingTotal), 0, std::numeric_limits<int>::max());
 
     pango_layout_set_width(layout, maxWidth * PANGO_SCALE);
     pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
@@ -980,64 +1035,64 @@ void CHyprBar::applyRule(const SP<CWindowRule>& r) {
     if (r->m_rule == "plugin:hyprbars:nobar")
         m_hidden = true;
     else if (r->m_rule.find("plugin:hyprbars:bar_height") == 0) {
-        auto res = configStringToInt(arg);
+    auto res = configStringToIntOpt(arg);
         m_bForcedBarHeight = res.has_value() ? static_cast<int>(res.value()) : 0;
     } else if (r->m_rule.find("plugin:hyprbars:bar_padding") == 0) {
-        auto res = configStringToInt(arg);
+    auto res = configStringToIntOpt(arg);
         m_bForcedBarPadding = res.has_value() ? static_cast<int>(res.value()) : 0;
     } else if (r->m_rule.find("plugin:hyprbars:bar_color") == 0) {
-        auto res = configStringToInt(arg);
+    auto res = configStringToIntOpt(arg);
         m_bForcedBarColor = CHyprColor(res.has_value() ? static_cast<int>(res.value()) : 0);
     } else if (r->m_rule.find("plugin:hyprbars:bar_blur") == 0) {
-        auto res = configStringToInt(arg);
+    auto res = configStringToIntOpt(arg);
         m_bForcedBarBlur = res.has_value() ? static_cast<int>(res.value()) : 0;
     } else if (r->m_rule.find("plugin:hyprbars:bar_part_of_window") == 0) {
-        auto res = configStringToInt(arg);
+    auto res = configStringToIntOpt(arg);
         m_bForcedBarPartOfWindow = res.has_value() ? static_cast<int>(res.value()) : 0;
     } else if (r->m_rule.find("plugin:hyprbars:bar_precedence_over_border") == 0) {
-        auto res = configStringToInt(arg);
+    auto res = configStringToIntOpt(arg);
         m_bForcedBarPrecedenceOverBorder = res.has_value() ? static_cast<int>(res.value()) : 0;
     } else if (r->m_rule.find("plugin:hyprbars:on_double_click") == 0)
         m_bForcedOnDoubleClick = arg;
     // Title Window Rules
     else if (r->m_rule.find("plugin:hyprbars:bar_title_enabled") == 0) {
-        auto res = configStringToInt(arg);
+    auto res = configStringToIntOpt(arg);
         m_bForcedBarTitleEnabled = res.has_value() ? static_cast<int>(res.value()) : 0;
     } else if (r->m_rule.find("plugin:hyprbars:bar_text_font") == 0)
         m_bForcedBarTextFont = arg;
     else if (r->m_rule.find("plugin:hyprbars:bar_text_size") == 0) {
-        auto res = configStringToInt(arg);
+    auto res = configStringToIntOpt(arg);
         m_bForcedBarTextSize = res.has_value() ? static_cast<int>(res.value()) : 0;
     } else if (r->m_rule.find("plugin:hyprbars:bar_text_align") == 0)
         m_bForcedBarTextAlign = arg;
     else if (r->m_rule.find("plugin:hyprbars:title_color") == 0) {
-        auto res = configStringToInt(arg);
+    auto res = configStringToIntOpt(arg);
         m_bForcedTitleColor = CHyprColor(res.has_value() ? static_cast<int>(res.value()) : 0);
     } else if (r->m_rule.find("plugin:hyprbars:hyprbars-title") == 0)
         m_bForcedBarCustomTitle = arg;
     // Buttons Window Rules
     else if (r->m_rule.find("plugin:hyprbars:icon_on_hover") == 0) {
-        auto res = configStringToInt(arg);
+        auto res = configStringToIntOpt(arg);
         m_bForcedIconOnHover = res.has_value() ? static_cast<int>(res.value()) : 0;
     } else if (r->m_rule.find("plugin:hyprbars:bar_buttons_alignment") == 0)
         m_bForcedBarButtonsAlignment = arg;
     else if (r->m_rule.find("plugin:hyprbars:bar_button_padding") == 0) {
-        auto res = configStringToInt(arg);
+    auto res = configStringToIntOpt(arg);
         m_bForcedBarButtonPadding = res.has_value() ? static_cast<int>(res.value()) : 0;
     } else if (r->m_rule.find("plugin:hyprbars:inactive_button_color") == 0) {
-        auto res = configStringToInt(arg);
+    auto res = configStringToIntOpt(arg);
         m_bForcedInactiveButtonColor = CHyprColor(res.has_value() ? static_cast<int>(res.value()) : 0);
     } else if (r->m_rule.find("plugin:hyprbars:hyprbars-button") == 0) {
         auto params = splitByDelimiter(arg, ">|<");
         if (params.size() >= 4) {
             WindowRuleButton btn;
-            auto res0 = configStringToInt(params[0]);
+            auto res0 = configStringToIntOpt(params[0]);
             btn.bgcol = CHyprColor(res0.has_value() ? static_cast<int>(res0.value()) : 0);
             btn.size = std::stoi(params[1]);
             btn.icon = params[2];
             btn.cmd = params[3];
             if (params.size() >= 5) {
-                auto res4 = configStringToInt(params[4]);
+                auto res4 = configStringToIntOpt(params[4]);
                 btn.fgcol = CHyprColor(res4.has_value() ? static_cast<int>(res4.value()) : 0);
                 btn.userfg = true;
             }

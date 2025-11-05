@@ -12,6 +12,7 @@
 
 #include "barDeco.hpp"
 #include "globals.hpp"
+#include "hyprbars_utils.hpp"
 
 // Custom Title Variables
 #include <cstdio>
@@ -120,8 +121,8 @@ Hyprlang::CParseResult onNewButton(const char* K, const char* V) {
     }
 
     bool userfg  = false;
-    auto fgcolor = configStringToInt("rgb(ffffff)");
-    auto bgcolor = configStringToInt(vars[0]);
+    auto fgcolor = parseConfigInt("rgb(ffffff)");
+    auto bgcolor = parseConfigInt(vars[0]);
 
     if (!bgcolor) {
         result.setError("invalid bgcolor");
@@ -129,8 +130,8 @@ Hyprlang::CParseResult onNewButton(const char* K, const char* V) {
     }
 
     if (vars.size() == 5) {
-        userfg  = true;
-        fgcolor = configStringToInt(vars[4]);
+    userfg  = true;
+    fgcolor = parseConfigInt(vars[4]);
     }
 
     if (!fgcolor) {
@@ -166,9 +167,9 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     static auto P3 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "windowUpdateRules",
                                                           [&](void* self, SCallbackInfo& info, std::any data) { onUpdateWindowRules(std::any_cast<PHLWINDOW>(data)); });
 
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:bar_color", Hyprlang::INT{*configStringToInt("rgba(33333388)")});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:bar_color", Hyprlang::INT{*parseConfigInt("rgba(33333388)")});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:bar_height", Hyprlang::INT{15});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:col.text", Hyprlang::INT{*configStringToInt("rgba(ffffffff)")});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:col.text", Hyprlang::INT{*parseConfigInt("rgba(ffffffff)")});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:bar_text_size", Hyprlang::INT{10});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:bar_title_enabled", Hyprlang::INT{1});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:bar_blur", Hyprlang::INT{0});
