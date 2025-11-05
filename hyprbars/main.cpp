@@ -182,6 +182,8 @@ Hyprlang::CParseResult onNewButton(const char* K, const char* V) {
 
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     PHANDLE = handle;
+    // very early low-level trace for crash investigation
+    hyprbars::lowlevel_log("PLUGIN_INIT: enter");
 
     const std::string HASH        = __hyprland_api_get_hash();
     const std::string CLIENT_HASH = __hyprland_api_get_client_hash();
@@ -193,7 +195,11 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         throw std::runtime_error("[hb] Version mismatch");
     }
 
+    hyprbars::lowlevel_log("PLUGIN_INIT: version check OK");
+
     g_pGlobalState = makeUnique<SGlobalState>();
+
+    hyprbars::lowlevel_log("PLUGIN_INIT: allocated global state");
 
     static auto P = HyprlandAPI::registerCallbackDynamic(PHANDLE, "openWindow",
                                                        [&](void* self, SCallbackInfo& info, std::any data) {
@@ -221,6 +227,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
                                                               }
                                                           });
 
+    hyprbars::lowlevel_log("PLUGIN_INIT: callbacks registered");
+
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:bar_color", Hyprlang::INT{*parseConfigInt("rgba(33333388)")});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:bar_height", Hyprlang::INT{15});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:col.text", Hyprlang::INT{*parseConfigInt("rgba(ffffffff)")});
@@ -244,6 +252,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigKeyword(PHANDLE, "hyprbars-button", onNewButton, Hyprlang::SHandlerOptions{});
     static auto P4 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "preConfigReload", [&](void* self, SCallbackInfo& info, std::any data) { onPreConfigReload(); });
 
+    hyprbars::lowlevel_log("PLUGIN_INIT: config keywords and preConfigReload registered");
+
     // add deco to existing windows
     for (auto& w : g_pCompositor->m_windows) {
         if (w->isHidden() || !w->m_isMapped)
@@ -253,6 +263,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     }
 
     HyprlandAPI::reloadConfig();
+
+    hyprbars::lowlevel_log("PLUGIN_INIT: reloadConfig called");
 
     HyprlandAPI::addNotification(PHANDLE, "[hyprbars] Initialized successfully!", CHyprColor{0.2, 1.0, 0.2, 1.0}, 5000);
 
