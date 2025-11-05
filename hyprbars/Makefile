@@ -5,7 +5,7 @@ else
     EXTRA_FLAGS =
 endif
 
-CXXFLAGS = -shared -fPIC -g -std=c++2b -Wno-c++11-narrowing
+CXXFLAGS = -shared -fPIC -g -std=c++2b
 INCLUDES = `pkg-config --cflags pixman-1 libdrm hyprland pangocairo libinput libudev wayland-server xkbcommon`
 LIBS = `pkg-config --libs pangocairo`
 

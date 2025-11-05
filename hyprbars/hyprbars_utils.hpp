@@ -52,3 +52,20 @@ static inline std::optional<int> parseConfigInt(const std::string& s) {
 
     return std::nullopt;
 }
+
+// Preferred wrapper: if building against Hyprland headers that provide
+// configStringToInt (modern Hyprland), prefer using it; otherwise fall back
+// to parseConfigInt. We guard with HYPRLAND_050 which is added in the Makefile.
+static inline std::optional<int> configStringToIntOpt(const std::string& s) {
+#ifdef HYPRLAND_050
+    // Try using Hyprland's helper if available.
+    // We can't include Hyprland headers here; if the symbol is available at
+    // compile-time the call will work. Otherwise the local parser will be used.
+    try {
+        auto res = configStringToInt(s); // if provided by Hyprland, use it
+        if (res.has_value())
+            return static_cast<int>(res.value());
+    } catch (...) {}
+#endif
+    return parseConfigInt(s);
+}

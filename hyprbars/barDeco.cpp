@@ -34,55 +34,7 @@
 
 #include <optional>
 
-// Local parser: parse color/int strings used by the plugin and return optional<int>.
-// This avoids depending on Hyprland's configStringToInt helper which may change across
-// Hyprland versions or not be visible at compile time.
-static std::optional<int> configStringToIntOpt(const std::string& s) {
-    if (s.empty())
-        return std::nullopt;
-
-    // trim
-    size_t b = s.find_first_not_of(" \t\n\r");
-    size_t e = s.find_last_not_of(" \t\n\r");
-    const std::string t = (b == std::string::npos) ? std::string() : s.substr(b, e - b + 1);
-
-    try {
-        // colors: rgb(ffffff) or rgba(ffffffff) (hex)
-        if (t.rfind("rgb(", 0) == 0 || t.rfind("rgba(", 0) == 0) {
-            auto start = t.find('(');
-            auto end = t.find(')');
-            if (start != std::string::npos && end != std::string::npos && end > start + 1) {
-                std::string hex = t.substr(start + 1, end - start - 1);
-                // remove possible prefixes/spaces
-                hex.erase(std::remove_if(hex.begin(), hex.end(), ::isspace), hex.end());
-                // If rgb with 6 hex digits, append alpha ff
-                if (hex.size() == 6)
-                    hex += "ff";
-                // only hex digits expected now
-                unsigned long val = std::stoul(hex, nullptr, 16);
-                return static_cast<int>(val);
-            }
-            return std::nullopt;
-        }
-
-        // numeric decimal
-        if (std::all_of(t.begin(), t.end(), [](unsigned char c) { return std::isdigit(c) || c == '+' || c == '-'; })) {
-            int v = std::stoi(t);
-            return v;
-        }
-
-        // fallback: try parse as hex without parentheses
-        bool allhex = !t.empty() && std::all_of(t.begin(), t.end(), [](unsigned char c) { return std::isxdigit(c); });
-        if (allhex) {
-            unsigned long val = std::stoul(t, nullptr, 16);
-            return static_cast<int>(val);
-        }
-    } catch (...) {
-        return std::nullopt;
-    }
-
-    return std::nullopt;
-}
+// Use configStringToIntOpt from hyprbars_utils.hpp
 
 // Use Hyprland's configStringToInt (returns std::expected<int64_t,std::string>).
 // Provide a safe fallback for DAMAGE_NONE if not defined by the headers.
@@ -130,16 +82,23 @@ CHyprBar::CHyprBar(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow) {
     m_pButtonsTex = makeShared<CTexture>();
 
     // Some Hyprland versions changed createAnimation; set initial value directly to be safe
-    *m_cRealBarColor = CHyprColor{**PCOLOR};
+    // Cast the underlying config value to uint64_t explicitly to avoid narrowing warnings
+    *m_cRealBarColor = CHyprColor{static_cast<uint64_t>(**PCOLOR)};
     m_cRealBarColor->setUpdateCallback([&](auto) { damageEntire(); });
 }
 
 CHyprBar::~CHyprBar() {
+    /* unregisterCallback is marked deprecated in newer PluginAPI.hpp; suppress deprecation
+     * warnings locally until we migrate to the newer API. This keeps the build output clean.
+     */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     HyprlandAPI::unregisterCallback(PHANDLE, m_pMouseButtonCallback);
     HyprlandAPI::unregisterCallback(PHANDLE, m_pTouchDownCallback);
     HyprlandAPI::unregisterCallback(PHANDLE, m_pTouchUpCallback);
     HyprlandAPI::unregisterCallback(PHANDLE, m_pTouchMoveCallback);
     HyprlandAPI::unregisterCallback(PHANDLE, m_pMouseMoveCallback);
+#pragma GCC diagnostic pop
     // C++17 erase-remove idiom
     auto& bars = g_pGlobalState->bars;
     bars.erase(std::remove(bars.begin(), bars.end(), m_self), bars.end());
