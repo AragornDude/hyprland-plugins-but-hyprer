@@ -1011,7 +1011,67 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
             g_pHyprOpenGL->renderRect(titleBarBox, color, rectData);
         #endif
 
-            // ...existing code...
+            // render title
+            int currentTextSize = m_bForcedBarTextSize.value_or(**((Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_text_size")->getDataStaticPtr()));
+            if (localTitleEnabled && (m_szLastTitle != PWINDOW->m_title || m_bWindowSizeChanged || m_pTextTex->m_texID == 0 || m_bTitleColorChanged || m_iLastTextSize != currentTextSize)) {
+                if (m_bForcedBarCustomTitle.has_value()) {
+                    m_szLastTitle = substituteTitleVars(m_bForcedBarCustomTitle.value(), PWINDOW);
+                } else {
+                    m_szLastTitle = PWINDOW->m_title;
+                }
+                renderBarTitle(BARBUF, pMonitor->m_scale);
+                m_iLastTextSize = currentTextSize;
+            }
+
+            if (ROUNDING) {
+                // cleanup stencil
+                glClearStencil(0);
+                glClear(GL_STENCIL_BUFFER_BIT);
+#ifndef HYPRLAND_049
+                g_pHyprOpenGL->setCapStatus(GL_STENCIL_TEST, false);
+#else
+                glDisable(GL_STENCIL_TEST);
+#endif
+                glStencilMask(-1);
+                glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            }
+
+            CBox textBox = {titleBarBox.x, titleBarBox.y, (int)BARBUF.x, (int)BARBUF.y};
+            if (localTitleEnabled) {
+#ifdef HYPRLAND_049
+                g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, a);
+#else
+                CHyprOpenGLImpl::STextureRenderData textTexData = {};
+                textTexData.a = a;
+                g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, textTexData);
+#endif
+            }
+
+            if (m_bButtonsDirty || m_bWindowSizeChanged) {
+                renderBarButtons(BARBUF, pMonitor->m_scale);
+                m_bButtonsDirty = false;
+            }
+
+#ifdef HYPRLAND_049
+            g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, a);
+#else
+            CHyprOpenGLImpl::STextureRenderData btnTexData = {};
+            btnTexData.a = a;
+            g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, btnTexData);
+#endif
+
+            g_pHyprOpenGL->scissor(nullptr);
+
+            renderBarButtonsText(&textBox, pMonitor->m_scale, a);
+
+            m_bWindowSizeChanged = false;
+            m_bTitleColorChanged = false;
+
+            // dynamic updates change the extents
+            if (m_iLastHeight != m_bForcedBarHeight.value_or(**PHEIGHT)) {
+                g_pLayoutManager->getCurrentLayout()->recalculateWindow(PWINDOW);
+                m_iLastHeight = m_bForcedBarHeight.value_or(**PHEIGHT);
+            }
         }
     }
 }
