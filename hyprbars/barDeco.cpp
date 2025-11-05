@@ -1060,13 +1060,28 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
                 hyprbars::lowlevel_log(dbg);
             }
             if (localTitleEnabled) {
+                // If the texture wasn't created for whatever reason, draw a
+                // visible debug rectangle so we can confirm the render path
+                // is being executed and isolate the missing-texture problem.
+                if (m_pTextTex && m_pTextTex->m_texID == 0) {
+                    hyprbars::lowlevel_log("renderPass: m_pTextTex == 0, drawing debug rect fallback");
 #ifdef HYPRLAND_049
-                g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, a);
+                    g_pHyprOpenGL->renderRect(textBox, CHyprColor(1.0, 0.0, 1.0, 0.85), scaledRounding, m_pWindow->roundingPower());
 #else
-                CHyprOpenGLImpl::STextureRenderData textTexData = {};
-                textTexData.a = a;
-                g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, textTexData);
+                    CHyprOpenGLImpl::SRectRenderData debugRect = {};
+                    debugRect.round = scaledRounding;
+                    debugRect.roundingPower = m_pWindow->roundingPower();
+                    g_pHyprOpenGL->renderRect(textBox, CHyprColor(1.0, 0.0, 1.0, 0.85), debugRect);
 #endif
+                } else {
+#ifdef HYPRLAND_049
+                    g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, a);
+#else
+                    CHyprOpenGLImpl::STextureRenderData textTexData = {};
+                    textTexData.a = a;
+                    g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, textTexData);
+#endif
+                }
             }
 
             if (m_bButtonsDirty || m_bWindowSizeChanged) {
@@ -1074,13 +1089,32 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
                 m_bButtonsDirty = false;
             }
 
+            // If buttons texture is missing, log and let renderBarButtons have
+            // already attempted to create it. If it's still missing, draw a
+            // small debug rect aligned to the right so we can see the area.
+            if (m_pButtonsTex && m_pButtonsTex->m_texID == 0) {
+                hyprbars::lowlevel_log("renderPass: m_pButtonsTex == 0, drawing debug rect fallback for buttons");
+                // draw a thin magenta bar on the right side of the textBox
+                CBox dbgBtnBox = textBox;
+                dbgBtnBox.x = textBox.x + textBox.width - 20;
+                dbgBtnBox.width = 20;
 #ifdef HYPRLAND_049
-            g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, a);
+                g_pHyprOpenGL->renderRect(dbgBtnBox, CHyprColor(1.0, 0.0, 1.0, 0.85), scaledRounding, m_pWindow->roundingPower());
 #else
-            CHyprOpenGLImpl::STextureRenderData btnTexData = {};
-            btnTexData.a = a;
-            g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, btnTexData);
+                CHyprOpenGLImpl::SRectRenderData debugRect = {};
+                debugRect.round = scaledRounding;
+                debugRect.roundingPower = m_pWindow->roundingPower();
+                g_pHyprOpenGL->renderRect(dbgBtnBox, CHyprColor(1.0, 0.0, 1.0, 0.85), debugRect);
 #endif
+            } else {
+#ifdef HYPRLAND_049
+                g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, a);
+#else
+                CHyprOpenGLImpl::STextureRenderData btnTexData = {};
+                btnTexData.a = a;
+                g_pHyprOpenGL->renderTexture(m_pButtonsTex, textBox, btnTexData);
+#endif
+            }
 
             g_pHyprOpenGL->scissor(nullptr);
 
