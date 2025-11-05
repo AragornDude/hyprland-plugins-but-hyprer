@@ -178,7 +178,7 @@ std::vector<std::string> splitByDelimiter(const std::string& str, const std::str
     return out;
 }
 CHyprBar::CHyprBar(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow) {
-    hyprbars::lowlevel_log("CHyprBar::CHyprBar: enter");
+    hyprbars::lowlevel_log("CHyprBar::CHyprBar: enter ");
     m_pWindow = pWindow;
 
     static auto* const PCOLOR = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_color")->getDataStaticPtr();
