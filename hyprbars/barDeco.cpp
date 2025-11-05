@@ -874,6 +874,16 @@ void CHyprBar::draw(PHLMONITOR pMonitor, const float& a) {
         g_pDecorationPositioner->repositionDeco(this);
     }
 
+    // Diagnostic: log draw entry and key state
+    {
+        char dbg[256];
+        const auto PWINDOW = m_pWindow.lock();
+        snprintf(dbg, sizeof(dbg), "draw: hidden=%d validMapped=%d enabled=%d mapped=%d texText=%u texButtons=%u",
+                 m_hidden ? 1 : 0, validMapped(m_pWindow) ? 1 : 0, **PENABLED ? 1 : 0, PWINDOW ? (PWINDOW->m_isMapped ? 1 : 0) : 0,
+                 (unsigned)(m_pTextTex ? m_pTextTex->m_texID : 0), (unsigned)(m_pButtonsTex ? m_pButtonsTex->m_texID : 0));
+        hyprbars::lowlevel_log(dbg);
+    }
+
     if (m_hidden || !validMapped(m_pWindow) || !**PENABLED)
         return;
 
@@ -881,6 +891,8 @@ void CHyprBar::draw(PHLMONITOR pMonitor, const float& a) {
 
     if (!PWINDOW->m_windowData.decorate.valueOrDefault())
         return;
+
+    hyprbars::lowlevel_log("draw: adding render pass for bar");
 
     auto data = CBarPassElement::SBarData{this, a};
 #ifdef HYPRLAND_049
