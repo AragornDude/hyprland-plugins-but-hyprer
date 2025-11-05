@@ -9,6 +9,7 @@
 #include <hyprland/src/render/Renderer.hpp>
 
 #include <algorithm>
+#include <ranges>
 
 #include "barDeco.hpp"
 #include "globals.hpp"
@@ -62,6 +63,12 @@ APICALL EXPORT std::string PLUGIN_API_VERSION() {
 static void onNewWindow(void* self, std::any data) {
     // data is guaranteed
     const auto PWINDOW = std::any_cast<PHLWINDOW>(data);
+    // trace entry with title and mapped flag (best-effort)
+    {
+        char buf[512];
+        snprintf(buf, sizeof(buf), "onNewWindow: title='%s' mapped=%d", PWINDOW->m_title.c_str(), PWINDOW->m_isMapped ? 1 : 0);
+        hyprbars::lowlevel_log(buf);
+    }
     try {
         if (!PWINDOW->m_X11DoesntWantBorders) {
             if (std::ranges::any_of(PWINDOW->m_windowDecorations, [](const auto& d) { return d->getDisplayName() == "Hyprbar"; }))
@@ -71,6 +78,7 @@ static void onNewWindow(void* self, std::any data) {
             g_pGlobalState->bars.emplace_back(bar);
             bar->m_self = bar;
             HyprlandAPI::addWindowDecoration(PHANDLE, PWINDOW, std::move(bar));
+            hyprbars::lowlevel_log("onNewWindow: addWindowDecoration done");
         }
     } catch (const std::exception& e) {
     HyprlandAPI::addNotification(PHANDLE, std::string("[hyprbars] onNewWindow exception: ") + e.what(), CHyprColor{1.0, 0.2, 0.2, 1.0}, 8000);
