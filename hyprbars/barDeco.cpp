@@ -21,7 +21,7 @@
 #include "hyprbars_logger.hpp"
 #include <algorithm>
 #include <limits>
-
+//
 // Define missing layer shell constants if not present
 #ifndef ZWLR_LAYER_SHELL_V1_LAYER_TOP
 #define ZWLR_LAYER_SHELL_V1_LAYER_TOP 2
@@ -900,6 +900,13 @@ void CHyprBar::draw(PHLMONITOR pMonitor, const float& a) {
 #else
     g_pHyprRenderer->m_renderPass.add(makeUnique<CBarPassElement>(data));
 #endif
+    // DEBUG: also call renderPass directly to confirm render code path is valid
+    hyprbars::lowlevel_log("draw: DEBUG calling renderPass directly");
+    try {
+        renderPass(pMonitor, a);
+    } catch (...) {
+        hyprbars::lowlevel_log("draw: DEBUG direct renderPass threw");
+    }
 }
 
 void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
