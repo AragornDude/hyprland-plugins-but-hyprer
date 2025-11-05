@@ -2,70 +2,86 @@
 
 #include <optional>
 #include <string>
-#include <algorithm>
 #include <cctype>
+#include <sstream>
+#include <algorithm>
 
-// Parse config-ish strings used by the plugin into an int (hex color or decimal).
-// Returns std::nullopt on failure.
-static inline std::optional<int> parseConfigInt(const std::string& s) {
-    if (s.empty())
-        return std::nullopt;
+// Minimal config string -> int parser used by the plugin.
+// Supports:
+//  - plain integers (decimal)
+//  - hex in parentheses like "rgb(ff4040)", "rgba(33333388)"
+// Returns std::optional<long long> (empty on parse failure).
 
+inline std::optional<long long> parseConfigInt(const std::string& s) {
     // trim
-    size_t b = s.find_first_not_of(" \t\n\r");
-    size_t e = s.find_last_not_of(" \t\n\r");
-    const std::string t = (b == std::string::npos) ? std::string() : s.substr(b, e - b + 1);
+    size_t b = 0, e = s.size();
+    while (b < e && std::isspace((unsigned char)s[b])) ++b;
+    while (e > b && std::isspace((unsigned char)s[e - 1])) --e;
+    if (b >= e) return std::nullopt;
+    const std::string t = s.substr(b, e - b);
 
-    try {
-        // colors: rgb(ffffff) or rgba(ffffffff) (hex)
-        if (t.rfind("rgb(", 0) == 0 || t.rfind("rgba(", 0) == 0) {
-            auto start = t.find('(');
-            auto end = t.find(')');
-            if (start != std::string::npos && end != std::string::npos && end > start + 1) {
-                std::string hex = t.substr(start + 1, end - start - 1);
-                // remove possible prefixes/spaces
-                hex.erase(std::remove_if(hex.begin(), hex.end(), ::isspace), hex.end());
-                // If rgb with 6 hex digits, append alpha ff
-                if (hex.size() == 6)
-                    hex += "ff";
-                unsigned long val = std::stoul(hex, nullptr, 16);
-                return static_cast<int>(val);
+    // If looks like rgb(...) or rgba(...)
+    auto open = t.find('(');
+    auto close = t.find(')');
+    if (open != std::string::npos && close != std::string::npos && close > open) {
+        std::string inner = t.substr(open + 1, close - open - 1);
+        // remove 0x or # prefixes if present
+        if (!inner.empty() && (inner.rfind("0x", 0) == 0 || inner.rfind("#", 0) == 0)) {
+            if (inner.rfind("0x", 0) == 0)
+                inner = inner.substr(2);
+            else if (inner.rfind("#", 0) == 0)
+                inner = inner.substr(1);
+        }
+        // remove possible spaces
+        inner.erase(std::remove_if(inner.begin(), inner.end(), ::isspace), inner.end());
+        // hex string should be 6 or 8 characters
+        if (inner.size() == 6 || inner.size() == 8) {
+            std::istringstream iss(inner);
+            unsigned long long value = 0;
+            iss >> std::hex >> value;
+            if (!iss.fail()) {
+                if (inner.size() == 6) {
+                    // assume RGB, add full alpha
+                    value = (value << 8) | 0xFFULL;
+                }
+                return static_cast<long long>(value);
             }
+        }
+        // fallback: try decimal inside
+        try {
+            long long v = std::stoll(inner);
+            return v;
+        } catch (...) {
             return std::nullopt;
         }
+    }
 
-        // numeric decimal
-        if (std::all_of(t.begin(), t.end(), [](unsigned char c) { return std::isdigit(c) || c == '+' || c == '-'; })) {
-            int v = std::stoi(t);
-            return v;
+    // Otherwise try plain decimal or hex (like 0x... or #...)
+    try {
+        if (t.rfind("0x", 0) == 0) {
+            unsigned long long v = 0;
+            std::istringstream iss(t.substr(2));
+            iss >> std::hex >> v;
+            if (!iss.fail())
+                return static_cast<long long>(v);
+            return std::nullopt;
         }
-
-        // fallback: try parse as hex without parentheses
-        bool allhex = !t.empty() && std::all_of(t.begin(), t.end(), [](unsigned char c) { return std::isxdigit(c); });
-        if (allhex) {
-            unsigned long val = std::stoul(t, nullptr, 16);
-            return static_cast<int>(val);
+        if (t[0] == '#') {
+            unsigned long long v = 0;
+            std::istringstream iss(t.substr(1));
+            iss >> std::hex >> v;
+            if (!iss.fail())
+                return static_cast<long long>(v);
+            return std::nullopt;
         }
+        long long v = std::stoll(t);
+        return v;
     } catch (...) {
         return std::nullopt;
     }
-
-    return std::nullopt;
 }
 
-// Preferred wrapper: if building against Hyprland headers that provide
-// configStringToInt (modern Hyprland), prefer using it; otherwise fall back
-// to parseConfigInt. We guard with HYPRLAND_050 which is added in the Makefile.
-static inline std::optional<int> configStringToIntOpt(const std::string& s) {
-#ifdef HYPRLAND_050
-    // Try using Hyprland's helper if available.
-    // We can't include Hyprland headers here; if the symbol is available at
-    // compile-time the call will work. Otherwise the local parser will be used.
-    try {
-        auto res = configStringToInt(s); // if provided by Hyprland, use it
-        if (res.has_value())
-            return static_cast<int>(res.value());
-    } catch (...) {}
-#endif
+// compat name used in older code
+inline std::optional<long long> configStringToIntOpt(const std::string& s) {
     return parseConfigInt(s);
 }

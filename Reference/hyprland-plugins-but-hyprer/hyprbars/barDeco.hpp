@@ -108,12 +108,11 @@ class CHyprBar : public IHyprWindowDecoration {
     void                      renderBarButtonsText(CBox* barBox, const float scale, const float a);
     void                      damageOnButtonHover();
 
-  bool                      inputIsValid();
-  void                      onMouseButton(SCallbackInfo& info, IPointer::SButtonEvent e);
-  void                      onTouchDown(SCallbackInfo& info, ITouch::SDownEvent e);
-  void                      onTouchUp(SCallbackInfo& info, ITouch::SUpEvent e);
-  void                      onMouseMove(Vector2D coords);
-  void                      onTouchMove(SCallbackInfo& info, ITouch::SMotionEvent e);
+    bool                      inputIsValid();
+    void                      onMouseButton(SCallbackInfo& info, IPointer::SButtonEvent e);
+    void                      onTouchDown(SCallbackInfo& info, ITouch::SDownEvent e);
+    void                      onMouseMove(Vector2D coords);
+    void                      onTouchMove(SCallbackInfo& info, ITouch::SMotionEvent e);
 
     void                      handleDownEvent(SCallbackInfo& info, std::optional<ITouch::SDownEvent> touchEvent);
     void                      handleUpEvent(SCallbackInfo& info);
@@ -131,11 +130,10 @@ class CHyprBar : public IHyprWindowDecoration {
 
     std::string          m_szLastTitle;
 
-  bool                 m_bDraggingThis  = false;
-  bool                 m_bTouchEv       = false;
-  bool                 m_bDragPending   = false;
-  bool                 m_bCancelledDown = false;
-  int                  m_touchId        = 0;
+    bool                 m_bDraggingThis  = false;
+    bool                 m_bTouchEv       = false;
+    bool                 m_bDragPending   = false;
+    bool                 m_bCancelledDown = false;
 
     // store hover state for buttons as a bitfield
     unsigned int m_iButtonHoverState = 0;
