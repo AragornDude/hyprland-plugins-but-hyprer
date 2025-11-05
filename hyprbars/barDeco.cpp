@@ -202,9 +202,11 @@ CHyprBar::CHyprBar(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow) {
     m_pTextTex    = makeShared<CTexture>();
     m_pButtonsTex = makeShared<CTexture>();
 
-    // Some Hyprland versions changed createAnimation; set initial value directly to be safe
-    // Cast the underlying config value to uint64_t explicitly to avoid narrowing warnings
-    *m_cRealBarColor = CHyprColor{static_cast<uint64_t>(**PCOLOR)};
+    // Initialize animated color variable via the AnimationManager so m_cRealBarColor
+    // is properly created on all Hyprland versions. Use DAMAGE_NONE as a safe
+    // damage flag fallback.
+    g_pAnimationManager->createAnimation(CHyprColor{static_cast<uint64_t>(**PCOLOR)}, m_cRealBarColor,
+                                         g_pConfigManager->getAnimationPropertyConfig("border"), pWindow, static_cast<eAVarDamagePolicy>(DAMAGE_NONE));
     m_cRealBarColor->setUpdateCallback([&](auto) { damageEntire(); });
 
     hyprbars::lowlevel_log("CHyprBar::CHyprBar: exit");
