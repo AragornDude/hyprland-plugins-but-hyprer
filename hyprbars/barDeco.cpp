@@ -929,16 +929,7 @@ void CHyprBar::draw(PHLMONITOR pMonitor, const float& a) {
     {
         static bool logged_initial_state = false;
         const auto PWINDOW = m_pWindow.lock();
-        
-        // Only log initial state once per window
-        if (!logged_initial_state) {
-            char dbg[256];
-            snprintf(dbg, sizeof(dbg), "draw: initial state: hidden=%d validMapped=%d enabled=%d mapped=%d texText=%u texButtons=%u",
-                     m_hidden ? 1 : 0, validMapped(m_pWindow) ? 1 : 0, **PENABLED ? 1 : 0, PWINDOW ? (PWINDOW->m_isMapped ? 1 : 0) : 0,
-                     (unsigned)(m_pTextTex ? m_pTextTex->m_texID : 0), (unsigned)(m_pButtonsTex ? m_pButtonsTex->m_texID : 0));
-            hyprbars::lowlevel_log(dbg);
-            logged_initial_state = true;
-        }
+
         
         // Log when textures are missing but window is ready for display
         if (!m_hidden && validMapped(m_pWindow) && **PENABLED && PWINDOW && PWINDOW->m_isMapped) {
@@ -960,7 +951,6 @@ void CHyprBar::draw(PHLMONITOR pMonitor, const float& a) {
     if (!PWINDOW->m_windowData.decorate.valueOrDefault())
         return;
 
-    hyprbars::lowlevel_log("draw: adding render pass for bar");
 
     auto data = CBarPassElement::SBarData{this, a};
 #ifdef HYPRLAND_049
