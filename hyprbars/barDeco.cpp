@@ -34,6 +34,7 @@
 #include "BarPassElement.hpp"
 
 #include <optional>
+#include <cmath>
 
 // Use configStringToIntOpt from hyprbars_utils.hpp
 
@@ -1037,6 +1038,15 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
             }
 
             CBox textBox = {titleBarBox.x, titleBarBox.y, (int)BARBUF.x, (int)BARBUF.y};
+
+            // runtime diagnostic: log BARBUF, texture ids, title length and whether title rendering is enabled
+            {
+                char dbg[512];
+                snprintf(dbg, sizeof(dbg), "renderPass: BARBUF=%dx%d m_pTextTex=%u m_pButtonsTex=%u title_len=%zu enabled=%d color=%.3f,%.3f,%.3f,%.3f",
+                         (int)BARBUF.x, (int)BARBUF.y, (unsigned)(m_pTextTex ? m_pTextTex->m_texID : 0), (unsigned)(m_pButtonsTex ? m_pButtonsTex->m_texID : 0), m_szLastTitle.size(), localTitleEnabled ? 1 : 0,
+                         color.r, color.g, color.b, color.a);
+                hyprbars::lowlevel_log(dbg);
+            }
             if (localTitleEnabled) {
 #ifdef HYPRLAND_049
                 g_pHyprOpenGL->renderTexture(m_pTextTex, textBox, a);
