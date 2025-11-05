@@ -480,9 +480,88 @@ bool CHyprBar::doButtonPress(Hyprlang::INT* const* PBARPADDING, Hyprlang::INT* c
     return false;
 }
 
+bool CHyprBar::createTextureFromCairoSurface(SP<CTexture> out, cairo_surface_t* surface, cairo_t* cr, const Vector2D& bufferSize, const char* debugName) {
+    // Flush the cairo surface to ensure all drawing is complete
+    cairo_surface_flush(surface);
+
+    // Get the pixel data
+    const auto DATA = cairo_image_surface_get_data(surface);
+    if (!DATA) {
+        char dbg[256];
+        snprintf(dbg, sizeof(dbg), "%s: failed to get cairo surface data", debugName);
+        hyprbars::lowlevel_log(dbg);
+        return false;
+    }
+
+    // Allocate the GL texture
+    out->allocate();
+    if (out->m_texID == 0) {
+        char dbg[256];
+        snprintf(dbg, sizeof(dbg), "%s: texture allocation failed", debugName);
+        hyprbars::lowlevel_log(dbg);
+        return false;
+    }
+
+    char dbg[256];
+    snprintf(dbg, sizeof(dbg), "%s: binding texture %u", debugName, (unsigned)out->m_texID);
+    hyprbars::lowlevel_log(dbg);
+
+    // Set up the texture parameters
+    glBindTexture(GL_TEXTURE_2D, out->m_texID);
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR) {
+        snprintf(dbg, sizeof(dbg), "%s: glBindTexture failed with error 0x%x", debugName, error);
+        hyprbars::lowlevel_log(dbg);
+        return false;
+    }
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+#ifndef GLES2
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+#endif
+
+    // Upload the texture data
+    snprintf(dbg, sizeof(dbg), "%s: uploading texture data", debugName);
+    hyprbars::lowlevel_log(dbg);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bufferSize.x, bufferSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
+
+    error = glGetError();
+    if (error != GL_NO_ERROR) {
+        snprintf(dbg, sizeof(dbg), "%s: glTexImage2D failed with error 0x%x", debugName, error);
+        hyprbars::lowlevel_log(dbg);
+        return false;
+    }
+
+    snprintf(dbg, sizeof(dbg), "%s: texture created successfully, id=%u size=%dx%d",
+             debugName, (unsigned)out->m_texID, (int)bufferSize.x, (int)bufferSize.y);
+    hyprbars::lowlevel_log(dbg);
+
+    return true;
+}
+
 void CHyprBar::renderText(SP<CTexture> out, const std::string& text, const CHyprColor& color, const Vector2D& bufferSize, const float scale, const int fontSize) {
+    hyprbars::lowlevel_log("renderText: enter");
+    char dbg[256];
+    snprintf(dbg, sizeof(dbg), "renderText: bufferSize=%dx%d text='%s' fontSize=%d",
+             (int)bufferSize.x, (int)bufferSize.y, text.c_str(), fontSize);
+    hyprbars::lowlevel_log(dbg);
+
     const auto CAIROSURFACE = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, bufferSize.x, bufferSize.y);
-    const auto CAIRO        = cairo_create(CAIROSURFACE);
+    if (cairo_surface_status(CAIROSURFACE) != CAIRO_STATUS_SUCCESS) {
+        hyprbars::lowlevel_log("renderText: failed to create cairo surface");
+        return;
+    }
+
+    const auto CAIRO = cairo_create(CAIROSURFACE);
+    if (cairo_status(CAIRO) != CAIRO_STATUS_SUCCESS) {
+        hyprbars::lowlevel_log("renderText: failed to create cairo context");
+        cairo_surface_destroy(CAIROSURFACE);
+        return;
+    }
 
     // clear the pixmap
     cairo_save(CAIRO);
@@ -520,23 +599,13 @@ void CHyprBar::renderText(SP<CTexture> out, const std::string& text, const CHypr
 
     g_object_unref(layout);
 
-    cairo_surface_flush(CAIROSURFACE);
+    if (!createTextureFromCairoSurface(out, CAIROSURFACE, CAIRO, bufferSize, "renderText")) {
+        cairo_destroy(CAIRO);
+        cairo_surface_destroy(CAIROSURFACE);
+        return;
+    }
 
-    // copy the data to an OpenGL texture we have
-    const auto DATA = cairo_image_surface_get_data(CAIROSURFACE);
-    out->allocate();
-    glBindTexture(GL_TEXTURE_2D, out->m_texID);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-#ifndef GLES2
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-#endif
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bufferSize.x, bufferSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
-
-    // delete cairo
+    // delete cairo resources
     cairo_destroy(CAIRO);
     cairo_surface_destroy(CAIROSURFACE);
 }
@@ -628,23 +697,13 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
 
     g_object_unref(layout);
 
-    cairo_surface_flush(CAIROSURFACE);
+    if (!createTextureFromCairoSurface(m_pTextTex, CAIROSURFACE, CAIRO, bufferSize, "renderBarTitle")) {
+        cairo_destroy(CAIRO);
+        cairo_surface_destroy(CAIROSURFACE);
+        return;
+    }
 
-    // copy the data to an OpenGL texture we have
-    const auto DATA = cairo_image_surface_get_data(CAIROSURFACE);
-    m_pTextTex->allocate();
-    glBindTexture(GL_TEXTURE_2D, m_pTextTex->m_texID);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-#ifndef GLES2
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-#endif
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bufferSize.x, bufferSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
-
-    // delete cairo
+    // delete cairo resources
     cairo_destroy(CAIRO);
     cairo_surface_destroy(CAIROSURFACE);
 }
@@ -740,21 +799,13 @@ void CHyprBar::renderBarButtons(const Vector2D& bufferSize, const float scale) {
         }
     }
 
-    // copy the data to an OpenGL texture we have
-    const auto DATA = cairo_image_surface_get_data(CAIROSURFACE);
-    m_pButtonsTex->allocate();
-    glBindTexture(GL_TEXTURE_2D, m_pButtonsTex->m_texID);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    if (!createTextureFromCairoSurface(m_pButtonsTex, CAIROSURFACE, CAIRO, bufferSize, "renderBarButtons")) {
+        cairo_destroy(CAIRO);
+        cairo_surface_destroy(CAIROSURFACE);
+        return;
+    }
 
-#ifndef GLES2
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-#endif
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bufferSize.x, bufferSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, DATA);
-
-    // delete cairo
+    // delete cairo resources
     cairo_destroy(CAIRO);
     cairo_surface_destroy(CAIROSURFACE);
 }
@@ -876,12 +927,29 @@ void CHyprBar::draw(PHLMONITOR pMonitor, const float& a) {
 
     // Diagnostic: log draw entry and key state
     {
-        char dbg[256];
+        static bool logged_initial_state = false;
         const auto PWINDOW = m_pWindow.lock();
-        snprintf(dbg, sizeof(dbg), "draw: hidden=%d validMapped=%d enabled=%d mapped=%d texText=%u texButtons=%u",
-                 m_hidden ? 1 : 0, validMapped(m_pWindow) ? 1 : 0, **PENABLED ? 1 : 0, PWINDOW ? (PWINDOW->m_isMapped ? 1 : 0) : 0,
-                 (unsigned)(m_pTextTex ? m_pTextTex->m_texID : 0), (unsigned)(m_pButtonsTex ? m_pButtonsTex->m_texID : 0));
-        hyprbars::lowlevel_log(dbg);
+        
+        // Only log initial state once per window
+        if (!logged_initial_state) {
+            char dbg[256];
+            snprintf(dbg, sizeof(dbg), "draw: initial state: hidden=%d validMapped=%d enabled=%d mapped=%d texText=%u texButtons=%u",
+                     m_hidden ? 1 : 0, validMapped(m_pWindow) ? 1 : 0, **PENABLED ? 1 : 0, PWINDOW ? (PWINDOW->m_isMapped ? 1 : 0) : 0,
+                     (unsigned)(m_pTextTex ? m_pTextTex->m_texID : 0), (unsigned)(m_pButtonsTex ? m_pButtonsTex->m_texID : 0));
+            hyprbars::lowlevel_log(dbg);
+            logged_initial_state = true;
+        }
+        
+        // Log when textures are missing but window is ready for display
+        if (!m_hidden && validMapped(m_pWindow) && **PENABLED && PWINDOW && PWINDOW->m_isMapped) {
+            if (!m_pTextTex || m_pTextTex->m_texID == 0 || !m_pButtonsTex || m_pButtonsTex->m_texID == 0) {
+                char dbg[256];
+                snprintf(dbg, sizeof(dbg), "draw: textures missing but window ready: texText=%u texButtons=%u",
+                         (unsigned)(m_pTextTex ? m_pTextTex->m_texID : 0), 
+                         (unsigned)(m_pButtonsTex ? m_pButtonsTex->m_texID : 0));
+                hyprbars::lowlevel_log(dbg);
+            }
+        }
     }
 
     if (m_hidden || !validMapped(m_pWindow) || !**PENABLED)

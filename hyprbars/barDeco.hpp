@@ -144,6 +144,9 @@ class CHyprBar : public IHyprWindowDecoration {
     int    m_iLastHeight = 0;
     int    m_iLastTextSize = -1;
 
+    // Helper to create a GL texture from cairo surface
+    bool createTextureFromCairoSurface(SP<CTexture> out, cairo_surface_t* surface, cairo_t* cr, const Vector2D& bufferSize, const char* debugName);
+
     size_t getVisibleButtonCount(Hyprlang::INT* const* PBARBUTTONPADDING, Hyprlang::INT* const* PBARPADDING, const Vector2D& bufferSize, const float scale);
 
     friend class CBarPassElement;
