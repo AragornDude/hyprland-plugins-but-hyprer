@@ -60,43 +60,65 @@ APICALL EXPORT std::string PLUGIN_API_VERSION() {
 static void onNewWindow(void* self, std::any data) {
     // data is guaranteed
     const auto PWINDOW = std::any_cast<PHLWINDOW>(data);
+    try {
+        if (!PWINDOW->m_X11DoesntWantBorders) {
+            if (std::ranges::any_of(PWINDOW->m_windowDecorations, [](const auto& d) { return d->getDisplayName() == "Hyprbar"; }))
+                return;
 
-    if (!PWINDOW->m_X11DoesntWantBorders) {
-        if (std::ranges::any_of(PWINDOW->m_windowDecorations, [](const auto& d) { return d->getDisplayName() == "Hyprbar"; }))
-            return;
-
-        auto bar = makeUnique<CHyprBar>(PWINDOW);
-        g_pGlobalState->bars.emplace_back(bar);
-        bar->m_self = bar;
-        HyprlandAPI::addWindowDecoration(PHANDLE, PWINDOW, std::move(bar));
+            auto bar = makeUnique<CHyprBar>(PWINDOW);
+            g_pGlobalState->bars.emplace_back(bar);
+            bar->m_self = bar;
+            HyprlandAPI::addWindowDecoration(PHANDLE, PWINDOW, std::move(bar));
+        }
+    } catch (const std::exception& e) {
+        HyprlandAPI::addNotification(PHANDLE, std::string("[hyprbars] onNewWindow exception: ") + e.what(), CHyprColor{1.0, 0.2, 0.2, 1.0}, 8000);
+    } catch (...) {
+        HyprlandAPI::addNotification(PHANDLE, "[hyprbars] onNewWindow unknown exception", CHyprColor{1.0, 0.2, 0.2, 1.0}, 8000);
     }
 }
 
 static void onCloseWindow(void* self, std::any data) {
     // data is guaranteed
     const auto PWINDOW = std::any_cast<PHLWINDOW>(data);
+    try {
+        const auto BARIT = std::find_if(g_pGlobalState->bars.begin(), g_pGlobalState->bars.end(), [PWINDOW](const auto& bar) { return bar->getOwner() == PWINDOW; });
 
-    const auto BARIT = std::find_if(g_pGlobalState->bars.begin(), g_pGlobalState->bars.end(), [PWINDOW](const auto& bar) { return bar->getOwner() == PWINDOW; });
+        if (BARIT == g_pGlobalState->bars.end())
+            return;
 
-    if (BARIT == g_pGlobalState->bars.end())
-        return;
-
-    // we could use the API but this is faster + it doesn't matter here that much.
-    PWINDOW->removeWindowDeco(BARIT->get());
+        // we could use the API but this is faster + it doesn't matter here that much.
+        PWINDOW->removeWindowDeco(BARIT->get());
+    } catch (const std::exception& e) {
+        HyprlandAPI::addNotification(PHANDLE, std::string("[hyprbars] onCloseWindow exception: ") + e.what(), CHyprColor{1.0, 0.2, 0.2, 1.0}, 8000);
+    } catch (...) {
+        HyprlandAPI::addNotification(PHANDLE, "[hyprbars] onCloseWindow unknown exception", CHyprColor{1.0, 0.2, 0.2, 1.0}, 8000);
+    }
 }
 
 static void onPreConfigReload() {
-    g_pGlobalState->buttons.clear();
+    try {
+        g_pGlobalState->buttons.clear();
+    } catch (const std::exception& e) {
+        HyprlandAPI::addNotification(PHANDLE, std::string("[hyprbars] onPreConfigReload exception: ") + e.what(), CHyprColor{1.0, 0.2, 0.2, 1.0}, 8000);
+    } catch (...) {
+        HyprlandAPI::addNotification(PHANDLE, "[hyprbars] onPreConfigReload unknown exception", CHyprColor{1.0, 0.2, 0.2, 1.0}, 8000);
+    }
 }
 
 static void onUpdateWindowRules(PHLWINDOW window) {
-    const auto BARIT = std::find_if(g_pGlobalState->bars.begin(), g_pGlobalState->bars.end(), [window](const auto& bar) { return bar->getOwner() == window; });
+    try {
+        const auto BARIT = std::find_if(g_pGlobalState->bars.begin(), g_pGlobalState->bars.end(), [window](const auto& bar) { return bar->getOwner() == window; });
 
-    if (BARIT == g_pGlobalState->bars.end())
-        return;
+        if (BARIT == g_pGlobalState->bars.end())
+            return;
 
-    (*BARIT)->updateRules();
-    window->updateWindowDecos();
+        (*BARIT)->updateRules();
+        window->updateWindowDecos();
+    } catch (const std::exception& e) {
+        HyprlandAPI::addNotification(PHANDLE, std::string("[hyprbars] onUpdateWindowRules exception: ") + e.what(), CHyprColor{1.0, 0.2, 0.2, 1.0}, 8000);
+    } catch (...) {
+        HyprlandAPI::addNotification(PHANDLE, "[hyprbars] onUpdateWindowRules unknown exception", CHyprColor{1.0, 0.2, 0.2, 1.0}, 8000);
+    }
 }
 
 Hyprlang::CParseResult onNewButton(const char* K, const char* V) {
@@ -162,10 +184,27 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
     g_pGlobalState = makeUnique<SGlobalState>();
 
-    static auto P = HyprlandAPI::registerCallbackDynamic(PHANDLE, "openWindow", [&](void* self, SCallbackInfo& info, std::any data) { onNewWindow(self, data); });
+    static auto P = HyprlandAPI::registerCallbackDynamic(PHANDLE, "openWindow",
+                                                       [&](void* self, SCallbackInfo& info, std::any data) {
+                                                           try {
+                                                               onNewWindow(self, data);
+                                                           } catch (const std::exception& e) {
+                                                               HyprlandAPI::addNotification(PHANDLE, std::string("[hyprbars] openWindow handler exception: ") + e.what(), CHyprColor{1.0, 0.2, 0.2, 1.0}, 8000);
+                                                           } catch (...) {
+                                                               HyprlandAPI::addNotification(PHANDLE, "[hyprbars] openWindow handler unknown exception", CHyprColor{1.0, 0.2, 0.2, 1.0}, 8000);
+                                                           }
+                                                       });
     // static auto P2 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "closeWindow", [&](void* self, SCallbackInfo& info, std::any data) { onCloseWindow(self, data); });
     static auto P3 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "windowUpdateRules",
-                                                          [&](void* self, SCallbackInfo& info, std::any data) { onUpdateWindowRules(std::any_cast<PHLWINDOW>(data)); });
+                                                          [&](void* self, SCallbackInfo& info, std::any data) {
+                                                              try {
+                                                                  onUpdateWindowRules(std::any_cast<PHLWINDOW>(data));
+                                                              } catch (const std::exception& e) {
+                                                                  HyprlandAPI::addNotification(PHANDLE, std::string("[hyprbars] windowUpdateRules handler exception: ") + e.what(), CHyprColor{1.0, 0.2, 0.2, 1.0}, 8000);
+                                                              } catch (...) {
+                                                                  HyprlandAPI::addNotification(PHANDLE, "[hyprbars] windowUpdateRules handler unknown exception", CHyprColor{1.0, 0.2, 0.2, 1.0}, 8000);
+                                                              }
+                                                          });
 
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:bar_color", Hyprlang::INT{*parseConfigInt("rgba(33333388)")});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:hyprbars:bar_height", Hyprlang::INT{15});
