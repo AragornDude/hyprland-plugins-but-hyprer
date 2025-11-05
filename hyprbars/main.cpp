@@ -74,9 +74,13 @@ static void onNewWindow(void* self, std::any data) {
             if (std::ranges::any_of(PWINDOW->m_windowDecorations, [](const auto& d) { return d->getDisplayName() == "Hyprbar"; }))
                 return;
 
+            hyprbars::lowlevel_log("onNewWindow: before makeUnique");
             auto bar = makeUnique<CHyprBar>(PWINDOW);
+            hyprbars::lowlevel_log("onNewWindow: after makeUnique");
             g_pGlobalState->bars.emplace_back(bar);
+            hyprbars::lowlevel_log("onNewWindow: after emplace_back");
             bar->m_self = bar;
+            hyprbars::lowlevel_log("onNewWindow: after set m_self");
             HyprlandAPI::addWindowDecoration(PHANDLE, PWINDOW, std::move(bar));
             hyprbars::lowlevel_log("onNewWindow: addWindowDecoration done");
         }

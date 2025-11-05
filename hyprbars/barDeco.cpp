@@ -18,6 +18,7 @@
 #include <pango/pangocairo.h>
 #include <glib-object.h>
 #include "hyprbars_utils.hpp"
+#include "hyprbars_logger.hpp"
 #include <algorithm>
 #include <limits>
 
@@ -176,6 +177,7 @@ std::vector<std::string> splitByDelimiter(const std::string& str, const std::str
     return out;
 }
 CHyprBar::CHyprBar(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow) {
+    hyprbars::lowlevel_log("CHyprBar::CHyprBar: enter");
     m_pWindow = pWindow;
 
     static auto* const PCOLOR = (Hyprlang::INT* const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:hyprbars:bar_color")->getDataStaticPtr();
@@ -204,6 +206,8 @@ CHyprBar::CHyprBar(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow) {
     // Cast the underlying config value to uint64_t explicitly to avoid narrowing warnings
     *m_cRealBarColor = CHyprColor{static_cast<uint64_t>(**PCOLOR)};
     m_cRealBarColor->setUpdateCallback([&](auto) { damageEntire(); });
+
+    hyprbars::lowlevel_log("CHyprBar::CHyprBar: exit");
 }
 
 CHyprBar::~CHyprBar() {
